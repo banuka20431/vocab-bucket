@@ -1,0 +1,20 @@
+:root {
+    background-color: rgb(96, 163, 231);
+}
+
+.container {
+    width: 300px;
+    height: max-content;
+    padding: 10px 20px;
+}
+
+.title {
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-size: large;
+    text-align: center;
+}
+
+.word {
+    font-weight: bold;
+    font-size: medium;
+}
