@@ -16,6 +16,12 @@
       "description": "Save selected word"
     }
   },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"], 
+      "js": ["scripts/content.js"]
+    }
+  ],
   "action": {
     "default_icon": {
       "16": "/images/icons/16.png",

@@ -32,11 +32,19 @@ async function saveWordToList(word) {
 /*
 Initialize save word with key combo
 */
-chrome.commands.onCommand.addListener((command) => {
+
+async function getTabId() {
+  const [tabData] = await chrome.tabs.query({ active: true, currentWindow: true});
+  return tabData?.id;
+}
+
+chrome.commands.onCommand.addListener( async (command) => {
   if (command === "save-to-vocab-bucket") {
+    const TAB_ID = await getTabId();
+    console.log(TAB_ID);
     chrome.scripting.executeScript(
       {
-        target: { tabId: chrome.tabs.TAB_ID_PLACEHOLDER },
+        target: { tabId: TAB_ID },
         func: () => window.getSelection().toString(),
       },
       async (selection) => {
