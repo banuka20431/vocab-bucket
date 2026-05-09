@@ -1,20 +1,128 @@
 :root {
-    background-color: rgb(96, 163, 231);
+    --ink: #10233b;
+    --ink-soft: #304862;
+    --sky: #d4eef8;
+    --ocean: #6fb9d8;
+    --foam: #eff9ff;
+    --card: rgba(255, 255, 255, 0.76);
+    --card-border: rgba(255, 255, 255, 0.92);
+    --shadow: rgba(20, 58, 80, 0.2);
 }
 
-.container {
-    width: 300px;
-    height: max-content;
-    padding: 10px 20px;
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    width: 360px;
+    min-height: 420px;
+}
+
+body {
+    font-family: "Trebuchet MS", "Segoe UI", "Noto Sans", sans-serif;
+    color: var(--ink);
+    background:
+        radial-gradient(circle at 10% 10%, #ffffff99 0%, transparent 40%),
+        radial-gradient(circle at 90% 25%, #98d7eb99 0%, transparent 45%),
+        linear-gradient(160deg, var(--sky) 0%, var(--ocean) 100%);
+}
+
+.app {
+    padding: 18px 16px 14px;
+}
+
+.hero {
+    margin-bottom: 14px;
+    padding: 14px;
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    background: var(--card);
+    box-shadow: 0 10px 20px var(--shadow);
+    backdrop-filter: blur(4px);
+}
+
+.eyebrow {
+    margin: 0;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-size: 11px;
+    font-weight: 700;
 }
 
 .title {
-    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
-    font-size: large;
-    text-align: center;
+    margin: 4px 0 6px;
+    font-family: "Georgia", "Times New Roman", serif;
+    font-size: 28px;
+    line-height: 1.1;
+}
+
+.subtitle {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 13px;
+}
+
+.word-count {
+    margin: 12px 0 0;
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: var(--foam);
+    border: 1px solid #b4deee;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.words-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 10px;
+    max-height: 282px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.words-list::-webkit-scrollbar {
+    width: 7px;
+}
+
+.words-list::-webkit-scrollbar-thumb {
+    background: #5ba3c4;
+    border-radius: 999px;
+}
+
+.word-list-item,
+.empty-state {
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px solid var(--card-border);
+    background: var(--card);
+    box-shadow: 0 7px 16px var(--shadow);
 }
 
 .word {
-    font-weight: bold;
-    font-size: medium;
+    display: block;
+    font-family: "Georgia", "Times New Roman", serif;
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    margin-bottom: 4px;
+}
+
+.definition {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.empty-state {
+    text-align: center;
+    color: var(--ink-soft);
+    font-weight: 700;
 }

@@ -1,32 +1,40 @@
 const displaySavedWords = async () => {
+  const wordList = document.querySelector(".words-list");
+  const wordCount = document.getElementById("word-count");
   const data = await chrome.storage.local.get({ savedWords: [] });
-  const wordList = document.querySelector(".word-list");
   const words = data.savedWords;
 
-  wordList.innerHTML = "";
-
   if (words.length === 0) {
-    wordList.innerHTML = "<li>No words saved yet!</li>";
+    const emptyItem = document.createElement("li");
+    emptyItem.className = "empty-state";
+    emptyItem.textContent = "No words saved yet.";
+    wordList.appendChild(emptyItem);
+    wordCount.textContent = "0 words saved";
     return;
   }
 
-  words.array.forEach((word) => {
+  wordCount.textContent = `${words.length} words saved`;
+
+  (Array.isArray(words) ? words : []).forEach((word) => {
     const li = document.createElement("li");
     li.className = "word-list-item";
-    li.innerHTML = `
-    <li class="word-list-item">
-        <label for="word" class="word">${word}</label>
-        <p for="definition" class="definition">
-            Lorem ipsum dolor sit amet consectetur adipisicing elit.
-        </p>
-    </li>`;
 
+    const wordLabel = document.createElement("span");
+    wordLabel.className = "word";
+    wordLabel.textContent = `${word}`;
+
+    const definition = document.createElement("p");
+    definition.className = "definition";
+    definition.textContent = "Definition coming soon.";
+
+    li.appendChild(wordLabel);
+    li.appendChild(definition);
     wordList.appendChild(li);
   });
 };
 
 try {
-  await displaySavedWords();
+  displaySavedWords();
 } catch (error) {
   console.error("Failed to render word list:", error);
 }

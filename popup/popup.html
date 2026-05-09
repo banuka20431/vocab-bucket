@@ -1,20 +1,17 @@
 <html>
   <head>
-    <title>Water Popup</title>
+    <title>Popup</title>
     <link rel="stylesheet" href="popup.css">
   </head>
   <body>
-    <div class="container">
-      <label for="title" class="title">Vocab-Bucket</label>
-      <ul class="words-list">
-        <li class="word-list-item">
-          <label for="word" class="word">Ephemeral</label>
-          <p for="definition" class="definition">
-            things that last for a very short time, are transitory, or fleeting,
-            often used to describe natural, digital, or social experiences
-          </p>
-        </li>
-      </ul>
+    <div class="app">
+      <header class="hero">
+        <p class="eyebrow">Your Browser Lexicon</p>
+        <h1 class="title">Vocab Bucket</h1>
+        <p class="subtitle">Saved words from your reading sessions.</p>
+        <p class="word-count" id="word-count">0 words saved</p>
+      </header>
+      <ul class="words-list" aria-live="polite"></ul>
     </div>
     <script src="popup.js"></script>
   </body>

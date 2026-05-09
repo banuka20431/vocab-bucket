@@ -28,23 +28,25 @@ async function saveWordToList(word) {
   console.log(`Word saved: ${word}`);
 }
 
-
 /*
 Initialize save word with key combo
 */
 
-async function getTabId() {
-  const [tabData] = await chrome.tabs.query({ active: true, currentWindow: true});
-  return tabData?.id;
+async function getCurrentTab() {
+  const [tab] = await chrome.tabs.query({
+    active: true,
+    lastFocusedWindow: true,
+  });
+  return tab;
 }
 
-chrome.commands.onCommand.addListener( async (command) => {
+chrome.commands.onCommand.addListener(async (command) => {
   if (command === "save-to-vocab-bucket") {
-    const TAB_ID = await getTabId();
-    console.log(TAB_ID);
+    const currentTab = await getCurrentTab();
+
     chrome.scripting.executeScript(
       {
-        target: { tabId: TAB_ID },
+        target: { tabId: currentTab.id },
         func: () => window.getSelection().toString(),
       },
       async (selection) => {
@@ -56,43 +58,60 @@ chrome.commands.onCommand.addListener( async (command) => {
 });
 
 /*
-Setup grabbing auto corrected word if exists
+Continue the search after interception
 */
 
-chrome.omnibox.onInputEntered.addListener((text) => {
-  console.log("Search query:", text);
+const waitForTabLoad = (tabId) => {
+  return new Promise((resolve) => {
+    const listener = (updatedTabId, changeInfo) => {
+      if (updatedTabId === tabId && changeInfo.status === "complete") {
+        chrome.tabs.onUpdated.removeListener(listener);
+        resolve();
+      }
+    };
+    chrome.tabs.onUpdated.addListener(listener);
+  });
+};
+
+const grabAutoCorrectedWord = () => {
+  const autoCorrectedWordContainer = document.querySelector("#fprs");
+
+  if (!autoCorrectedWordContainer) {
+    return null;
+  }
+
+  const autoCorrectedWordElement =
+    autoCorrectedWordContainer.querySelector(":scope > a > b > i");
+
+  return autoCorrectedWordElement
+    ? autoCorrectedWordElement.textContent.trim()
+    : flase;
+};
+
+chrome.omnibox.onInputEntered.addListener(async (text) => {
+  console.log("Acquiring tab id...");
+  const currentTab = await getCurrentTab();
   const searchUrl = `https://www.google.com/search?q=${text}`;
 
-  chrome.tabs.update({ url: searchUrl });
+  console.log("Searching for the word:", text);
+  await chrome.tabs.update({ url: searchUrl });
+  console.log("Waiting for web results..");
+  await waitForTabLoad(currentTab.id);
+  console.log("Checking for auto corrected word...");
+
+  try {
+    const autoCorrectedWords = await chrome.scripting.executeScript({
+      target: { tabId: currentTab.id },
+      func: grabAutoCorrectedWord,
+    });
+    
+    const autoCorrectedWord = autoCorrectedWords[0].result;
+    
+    if (autoCorrectedWord) {
+      console.log(`corrected word ${autoCorrectedWords[0].result}`);
+      saveWordToList(autoCorrectedWord);
+    }
+  } catch (err) {
+    console.error(`Failer while trying to scrap auto corrections ${err}`);
+  }
 });
-
-/* 
-function getAutoCorrection() {
-  const autocorrectElement = document.querySelector("p.QRYxYe.NNMgCf.AwaEsc");
-  if (autocorrectElement != undefined) {
-    console.log(autocorrectElement.closest("i").innerText);
-  }
-}
-
-async function getActiveTabId() {
-  const [tab] = await chrome.tabs.query({
-    active: true,
-    currentWindow: true
-  });
-
-  return tab?.id;
-}
-
-async function injectScript() {
-  const targetId = await getActiveTabId();
-  if (targetId) {
-    chrome.scripting.executeScript({
-      target: { tabId: targetId },
-      func: getAutoCorrection,
-    })
-    .then(() => console.log("Script injected into tab:", targetId))
-    .catch((err) => console.error("Injection failed:", err));
-  }
-}
-
-injectScript(); */
