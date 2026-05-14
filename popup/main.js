@@ -9,7 +9,7 @@ const displaySavedWords = async () => {
     return;
   }
 
-  wordCount.textContent = `${words.length} words saved`;
+  wordCount.textContent = `${words.length} ${words.length == 1 ? "word" : "words"} saved`;
 
   if (!Array.isArray(words)) return;
 
@@ -48,7 +48,7 @@ const displaySavedWords = async () => {
       if (result.savedWords.length == 0) {
         setupInitialDisplay(wordList);
       } else {
-        wordCount.textContent = `${result.savedWords.length} words saved`;
+        wordCount.textContent = `${result.savedWords.length} ${result.savedWords.length == 1 ? "word" : "words"} saved`;
       }
     });
 
