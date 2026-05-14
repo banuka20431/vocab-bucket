@@ -1,0 +1,151 @@
+:root {
+    --ink: #10233b;
+    --ink-soft: #304862;
+    --sky: #d4eef8;
+    --ocean: #6fb9d8;
+    --accent: #4aa3c6; /* active / interactive tint */
+    --accent-600: #2f8fb0; /* stronger for borders/pressed */
+    --accent-100: #e8f9fc; /* subtle highlight */
+    --success: #2c8b68;
+    --danger: #b54848;
+    --foam: #eff9ff;
+    --card: rgba(255, 255, 255, 0.76);
+    --card-border: rgba(255, 255, 255, 0.92);
+    --shadow: rgba(20, 58, 80, 0.2);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    width: 360px;
+    min-height: 120px;
+}
+
+body {
+    font-family: "Trebuchet MS", "Segoe UI", "Noto Sans", sans-serif;
+    color: var(--ink);
+    background:
+        radial-gradient(circle at 10% 10%, #ffffff99 0%, transparent 40%),
+        radial-gradient(circle at 90% 25%, #98d7eb99 0%, transparent 45%),
+        linear-gradient(160deg, var(--sky) 0%, var(--ocean) 100%);
+}
+
+.app {
+    padding: 18px 16px 14px;
+}
+
+.hero {
+    margin-bottom: 14px;
+    padding: 14px;
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    background: var(--card);
+    box-shadow: 0 10px 20px var(--shadow);
+    backdrop-filter: blur(4px);
+}
+
+.word-item {
+    display: grid;
+    gap: 12px;
+    animation: rise-in 220ms ease-out both;
+}
+
+.word {
+    display: block;
+    font-family: "Georgia", "Times New Roman", serif;
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    margin-bottom: 4px;
+}
+
+.definition {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.actions button {
+    appearance: none;
+    border: 0;
+    border-radius: 14px;
+    padding: 10px 8px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    color: var(--ink);
+    background: var(--foam);
+    box-shadow: 0 7px 16px var(--shadow);
+    transition:
+        transform 160ms ease,
+        box-shadow 160ms ease,
+        filter 160ms ease,
+        background-color 160ms ease;
+}
+
+.actions button:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.02);
+}
+
+.actions button:active {
+    transform: translateY(0);
+    box-shadow: 0 5px 12px var(--shadow);
+}
+
+.def-recheck-btn {
+    border: 1px solid #b4deee;
+    background: linear-gradient(180deg, var(--foam), var(--accent-100));
+    color: var(--ink);
+}
+
+.discard-btn {
+    border: 1px solid rgba(181, 72, 72, 0.28);
+    background: linear-gradient(180deg, rgba(181,72,72,0.08), rgba(181,72,72,0.04));
+    color: var(--danger);
+}
+
+.save-btn {
+    border: 1px solid rgba(44, 139, 104, 0.28);
+    background: linear-gradient(180deg, var(--accent), var(--accent-600));
+    color: #ffffff;
+    box-shadow: 0 9px 22px rgba(47,143,176,0.14);
+}
+
+.actions button:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.9);
+    outline-offset: 2px;
+}
+
+/* Button hover/active tweaks for stronger feedback */
+.actions .save-btn:hover { transform: translateY(-2px); filter: brightness(1.04); }
+.actions .save-btn:active { transform: translateY(0); filter: brightness(0.98); box-shadow: 0 6px 14px rgba(47,143,176,0.18); }
+.actions .discard-btn:hover { transform: translateY(-2px); filter: brightness(1.02); }
+.actions .discard-btn:active { transform: translateY(0); filter: brightness(0.96); }
+.actions .def-recheck-btn:hover { transform: translateY(-2px); filter: brightness(1.02); }
+.actions .def-recheck-btn:active { transform: translateY(0); filter: brightness(0.98); }
+
+@keyframes rise-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
