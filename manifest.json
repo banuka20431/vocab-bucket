@@ -4,9 +4,10 @@
   "version": "1.0",
   "description": "Lets users save highlighted words on a web page and automatically fetch their meanings",
   "permissions": ["scripting", "activeTab", "webNavigation", "contextMenus", "storage"],
-  "omnibox": { "keyword" : "vocab" },
+  "omnibox": { "keyword" : "vb" },
   "background": {
-    "service_worker": "background/background.js"
+    "service_worker": "background/background.js",
+    "type": "module"
   },
   "commands": {
     "save-to-vocab-bucket": {
@@ -30,7 +31,7 @@
       "48": "/images/icons/48.png",
       "128": "/images/icons/128.png"
     },
-    "default_popup": "popup/popup.html"
+    "default_popup": "popup/main.html"
   },
   "icons": {
     "16": "/images/icons/16.png",

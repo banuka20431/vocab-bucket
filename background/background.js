@@ -1,7 +1,4 @@
-/*
-Setup the context the menu 
-*/
-
+// Register the context menu item used to save selected text.
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: "saveWord",
@@ -10,17 +7,26 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-chrome.contextMenus.onClicked.addListener((info, tab) => {
+// Open the confirmation popup after the user saves text from the context menu.
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === "saveWord" && info.selectionText) {
-    saveWordToList(info.selectionText);
+    try {
+      await chrome.storage.local.set({ selectedWord: info.selectionText });
+      await chrome.action.setPopup({ popup: "popup/save_conf/confirm.html" });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      await chrome.action.openPopup();
+    } catch (error) {
+      console.error(
+        `Error occured while setting up the confirmation menu: ${error}`,
+      );
+    }
   }
 });
 
-/*
-Save words to local storage
-*/
+// Persist a new word in extension storage.
 async function saveWordToList(word) {
   const result = await chrome.storage.local.get({ savedWords: [] });
+  if (result.savedWords.includes(word)) return;
   const updatedWords = [...result.savedWords, word.trim()];
 
   await chrome.storage.local.set({ savedWords: updatedWords });
@@ -28,10 +34,7 @@ async function saveWordToList(word) {
   console.log(`Word saved: ${word}`);
 }
 
-/*
-Initialize save word with key combo
-*/
-
+// Read the active tab so keyboard shortcuts can inspect the current page.
 async function getCurrentTab() {
   const [tab] = await chrome.tabs.query({
     active: true,
@@ -39,6 +42,7 @@ async function getCurrentTab() {
   });
   return tab;
 }
+// Save the current text selection when the configured keyboard command runs.
 
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === "save-to-vocab-bucket") {
@@ -51,15 +55,28 @@ chrome.commands.onCommand.addListener(async (command) => {
       },
       async (selection) => {
         const word = selection[0].result.trim();
-        if (word) saveWordToList(word);
+        if (word) {
+          try {
+            await chrome.storage.local.set({
+              selectedWord: word,
+            });
+            await chrome.action.setPopup({
+              popup: "popup/save_conf/confirm.html",
+            });
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            await chrome.action.openPopup();
+          } catch (error) {
+            console.error(
+              `Error occured while setting up the confirmation menu: ${error}`,
+            );
+          }
+        }
       },
     );
   }
 });
 
-/*
-Continue the search after interception
-*/
+// Wait until a tab finishes loading before scraping the result page.
 
 const waitForTabLoad = (tabId) => {
   return new Promise((resolve) => {
@@ -73,6 +90,7 @@ const waitForTabLoad = (tabId) => {
   });
 };
 
+// Extract Google’s autocorrect suggestion from the search results page.
 const grabAutoCorrectedWord = () => {
   const autoCorrectedWordContainer = document.querySelector("#fprs");
 
@@ -100,16 +118,21 @@ chrome.omnibox.onInputEntered.addListener(async (text) => {
   console.log("Checking for auto corrected word...");
 
   try {
+    // If Google corrected the query, store the suggested word instead.
     const autoCorrectedWords = await chrome.scripting.executeScript({
       target: { tabId: currentTab.id },
       func: grabAutoCorrectedWord,
     });
-    
+
     const autoCorrectedWord = autoCorrectedWords[0].result;
-    
+
     if (autoCorrectedWord) {
       console.log(`corrected word ${autoCorrectedWords[0].result}`);
       saveWordToList(autoCorrectedWord);
+    } else {
+      if (text.toLowerCase().startsWith("define")) {
+        saveWordToList(text.toLowerCase().replace("define", "").trim());
+      }
     }
   } catch (err) {
     console.error(`Failer while trying to scrap auto corrections ${err}`);
