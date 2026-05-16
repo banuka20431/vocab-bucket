@@ -8,8 +8,10 @@ const definitionElement = document.querySelector(".definition");
 
 async function updateUI() {
   const selectedWord = await getCachedWordMetaData();
-  wordElement.textContent = selectedWord ? selectedWord.spelling: "<ERROR>";
-  definitionElement.textContent = selectedWord ? selectedWord.definition.short : "<ERROR>";;
+  wordElement.textContent = selectedWord ? selectedWord.spelling : "<ERROR>";
+  definitionElement.textContent = selectedWord
+    ? selectedWord.definition.short
+    : "<ERROR>";
 }
 
 discardBtn.addEventListener("click", async () => {
@@ -23,10 +25,10 @@ saveBtn.addEventListener("click", async () => {
   if (word.length == 0) return;
   saveWord(await getCachedWordMetaData(word));
   window.close();
+  await chrome.storage.local.remove("selectedWord");
   await chrome.action.setPopup({ popup: "popup/main.html" });
 });
 
 document.addEventListener("DOMContentLoaded", () => {
   updateUI();
 });
-

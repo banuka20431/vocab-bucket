@@ -65,7 +65,7 @@ chrome.omnibox.onInputEntered.addListener(async (searchedTerm) => {
     if (autoCorrectedWord) {
       console.log(`corrected word ${autoCorrectedWords[0].result}`);
       await fetchWordMetaData(autoCorrectedWord);
-      saveWord(await getCachedWordMetaData());
+      openConfirmationPopup();
     } else {
       await fetchWordMetaData(searchedTerm);
       await openConfirmationPopup();
@@ -95,8 +95,8 @@ const handleWordSaveCommand = async (selection) => {
   const word = selection[0].result.trim();
   if (word) {
     try {
-      fetchWordMetaData(word);
-      openConfirmationPopup();
+      await fetchWordMetaData(word);
+      await openConfirmationPopup();
     } catch (error) {
       console.error(
         `Error occured while setting up the confirmation menu: ${error}`,
