@@ -23,6 +23,8 @@ body {
     margin: 0;
     width: 360px;
     min-height: 420px;
+    border-radius: 18px; /* rounded outer container */
+    overflow: hidden; /* clip background to rounded corners */
 }
 
 body {
