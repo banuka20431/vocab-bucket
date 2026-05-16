@@ -17,7 +17,7 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === "saveWord" && info.selectionText) {
     try {
-      await fetchWordMetaData(info.selectionText);
+      if(await fetchWordMetaData(info.selectionText) == false) return;
       await openConfirmationPopup();
     } catch (error) {
       console.error(
@@ -64,10 +64,10 @@ chrome.omnibox.onInputEntered.addListener(async (searchedTerm) => {
 
     if (autoCorrectedWord) {
       console.log(`corrected word ${autoCorrectedWords[0].result}`);
-      await fetchWordMetaData(autoCorrectedWord);
+      if(await fetchWordMetaData(autoCorrectedWord) == false) return;
       openConfirmationPopup();
     } else {
-      await fetchWordMetaData(searchedTerm);
+      if(await fetchWordMetaData(searchedTerm) == false) return;
       await openConfirmationPopup();
     }
   } catch (err) {
@@ -95,7 +95,7 @@ const handleWordSaveCommand = async (selection) => {
   const word = selection[0].result.trim();
   if (word) {
     try {
-      await fetchWordMetaData(word);
+      if(await fetchWordMetaData(word) == false) return;
       await openConfirmationPopup();
     } catch (error) {
       console.error(

@@ -8,6 +8,25 @@ import { config } from "../config.js";
 import { VocabularyExtractor } from "./VocabularyExtractor.js";
 
 export const fetchWordMetaData = async (word) => {
+  const result = await chrome.storage.local.get({ savedWords: [] });
+  const savedWords = result.savedWords;
+
+  if (checkForDuplicates(savedWords, word)) {
+    console.log("Word already saved. Aborting API call...");
+
+    await chrome.action.setPopup({
+      popup: "../popup/flash/already_saved/already_saved.html",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await chrome.action.openPopup();
+
+    await chrome.action.setPopup({
+      popup: "../popup/main.html",
+    });
+
+    return false;
+  }
+
   console.log(`fetching the metadata of the word ${word}.`);
   await fetch(`${config.API_URL}"/${word}?key=${config.API_KEY}`)
     .then((response) => {
@@ -45,10 +64,16 @@ export async function saveWord(metadata) {
 }
 
 const checkForDuplicates = (wordMetadataList, word) => {
+  console.log(`checking for duplicates of the word: ${word.toLowerCase()}`);
+  let duclicatesFound = false;
   wordMetadataList.forEach((wordMetaData) => {
-    if (wordMetaData.spelling == word) return true;
+    console.log(
+      `${wordMetaData.spelling.toLowerCase()}: ${wordMetaData.spelling.toLowerCase() === word.toLowerCase() ? "Yes" : "No"}`,
+    );
+    duclicatesFound =
+      wordMetaData.spelling.toLowerCase() === word.toLowerCase();
   });
-  return false;
+  return duclicatesFound;
 };
 
 export async function getCachedWordMetaData() {
