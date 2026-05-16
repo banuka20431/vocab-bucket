@@ -77,7 +77,11 @@ chrome.omnibox.onInputEntered.addListener(async (searchedTerm) => {
 
 // Extract Google’s autocorrect suggestion from the search results page.
 const grabAutoCorrectedWord = () => {
-  const autoCorrectedWordContainer = document.querySelector("#fprs");
+  let autoCorrectedWordContainer = document.querySelector("#fprs");
+
+  if(autoCorrectedWordContainer === null) {
+    autoCorrectedWordContainer = document.querySelector(".QRYxYe.NNMgCf")
+  }
 
   if (!autoCorrectedWordContainer) {
     return null;
