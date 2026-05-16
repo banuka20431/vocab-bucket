@@ -12,34 +12,34 @@ This extension is tailored for ESL (English as a Second Language) students, avid
 
 ### Tech Used
 
-| Technology | Purpose in Project |
-| --- | --- |
-| **JavaScript (ES6+)** | Core logic, asynchronous DOM manipulation, and Service Worker background tasks. |
-| **Manifest V3 API** | Modern Chrome Extension architecture, handling permissions, shortcuts, and message passing. |
-| **HTML5 & CSS3** | Structures and styles the elegant extension Popup and Lexicon UI. |
-| **Merriam-Webster API** | Primary data provider returning definitions, phonetics, and usage examples via JSON. |
-| **chrome.storage API** | Persists the user's saved vocabulary bucket across browser sessions. |
+| Technology              | Purpose in Project                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------- |
+| **JavaScript (ES6+)**   | Core logic, asynchronous DOM manipulation, and Service Worker background tasks.             |
+| **Manifest V3 API**     | Modern Chrome Extension architecture, handling permissions, shortcuts, and message passing. |
+| **HTML5 & CSS3**        | Structures and styles the elegant extension Popup and Lexicon UI.                           |
+| **Merriam-Webster API** | Primary data provider returning definitions, phonetics, and usage examples via JSON.        |
+| **chrome.storage API**  | Persists the user's saved vocabulary bucket across browser sessions.                        |
 
 ### Capabilities
 
-* **Quick Capture via Shortcut:** Users can instantly trigger a word lookup using the `Alt + Ctrl + S` keyboard shortcut.
-* **Interactive Definition Dialog:** Before saving, a preview card (e.g., for the word "simplify") allows users to read the basic meaning and choose to **Save**, **Discard**, or **Recheck the Definition**.
-* **Browser Lexicon Dashboard:** A beautiful, scrollable UI that displays the count of saved words and detailed vocabulary cards.
-* **Rich Vocabulary Cards:** Saved words display phonetic spellings (e.g., `/ˈpəmənənt/`), parts of speech (e.g., `adjective`), comprehensive definitions, and contextual usage examples.
-* **Audio Pronunciation:** Users can click "Play audio" to hear how a word is spoken.
-* **Bucket Management:** Instantly remove words from the lexicon when they are mastered.
+- **Quick Capture via Shortcut:** Users can instantly trigger a word lookup using the `Alt + Ctrl + S` keyboard shortcut.
+- **Interactive Definition Dialog:** Before saving, a preview card (e.g., for the word "simplify") allows users to read the basic meaning and choose to **Save**, **Discard**, or **Recheck the Definition**.
+- **Browser Lexicon Dashboard:** A beautiful, scrollable UI that displays the count of saved words and detailed vocabulary cards.
+- **Rich Vocabulary Cards:** Saved words display phonetic spellings (e.g., `/ˈpəmənənt/`), parts of speech (e.g., `adjective`), comprehensive definitions, and contextual usage examples.
+- **Audio Pronunciation:** Users can click "Play audio" to hear how a word is spoken.
+- **Bucket Management:** Instantly remove words from the lexicon when they are mastered.
 
 ### Future Improvements & Checklist
 
-* [x] Core extension architecture (Manifest V3) and popup UI.
-* [x] Merriam-Webster API integration for rich word data and audio.
-* [x] Keyboard shortcut listener (`Alt + Ctrl + S`).
-* [ ] **Implement "Recheck definition":** Build a fallback scraper to search Google for "define [word]" if the primary API fails or yields unsatisfactory results.
-* [ ] Implement a Node.js/Express backend proxy to completely hide the API key from the browser environment.
-* [ ] Add a JavaScript-driven Flashcard or Quiz mode to test saved vocabulary.
-* [ ] Support exporting saved word into multiple different formats such as .json, .csv, .md
-* [ ] **Shortcut Conflict Handling:** Add a settings menu allowing users to remap the `Alt + Ctrl + S` shortcut in case it conflicts with native OS or other app shortcuts.
-* [ ] **Cloud Sync:** Transition from `chrome.storage.local` to `chrome.storage.sync` so users can access their Vocab Bucket across different devices logged into Chrome.
+- [x] Core extension architecture (Manifest V3) and popup UI.
+- [x] Merriam-Webster API integration for rich word data and audio.
+- [x] Keyboard shortcut listener (`Alt + Ctrl + S`).
+- [ ] **Implement "Recheck definition":** Build a fallback scraper to search Google for "define [word]" if the primary API fails or yields unsatisfactory results.
+- [ ] Implement a Node.js/Express backend proxy to completely hide the API key from the browser environment.
+- [ ] Add a JavaScript-driven Flashcard or Quiz mode to test saved vocabulary.
+- [ ] Support exporting saved word into multiple different formats such as .json, .csv, .md
+- [ ] **Shortcut Conflict Handling:** Add a settings menu allowing users to remap the `Alt + Ctrl + S` shortcut in case it conflicts with native OS or other app shortcuts.
+- [ ] **Cloud Sync:** Transition from `chrome.storage.local` to `chrome.storage.sync` so users can access their Vocab Bucket across different devices logged into Chrome.
 
 ---
 
@@ -64,17 +64,38 @@ Vocab Bucket relies on the Merriam-Webster Learner's Dictionary API to fetch wor
 1. Navigate to the [Merriam-Webster Developer Center](https://dictionaryapi.com/) and register for a free account.
 2. Request a new key, ensuring you select the **"Merriam-Webster's Learner's Dictionary"**.
 3. In the root directory of your cloned project, locate `config.example.js`.
-4. Rename this file to `config.js`. *(Keep this file out of version control!)*
+4. Rename this file to `config.js`. _(Keep this file out of version control!)_
 5. Paste your API key into the file:
+
 ```javascript
 const API_KEY = "YOUR_COPIED_API_KEY_HERE";
-
 ```
-
 
 6. Return to `chrome://extensions/` and click the refresh icon (↺) on the Vocab Bucket card to reload the extension with your new config.
 
 ---
+
+Here is the specific section for your documentation. You can place this right under the **Configuration Guide** or create a new section dedicated to **Dependency Management**.
+
+As your JavaScript Mentor, I’ve also included a "Breakdown" section to explain _why_ these specific tools are in your `package.json`, especially how `dotenv` interacts with a Chrome Extension!
+
+---
+
+### Node Dependencies
+
+To set up the project dependencies, ensure you have [Node.js](https://nodejs.org/) installed on your machine, then follow these steps:
+
+1. **Open your terminal** and navigate to the project root directory.
+2. **Install the dependencies** by running:
+
+```bash
+npm install
+
+```
+
+#### The Breakdown: Understanding Our `package.json`
+
+- **`@types/chrome` & `@types/node` (Dev Dependencies)**: Even if we are writing vanilla JavaScript instead of TypeScript, these packages are vital. They provide your code editor (like VS Code) with rich IntelliSense, auto-completion, and inline documentation for the complex `chrome.*` Manifest V3 APIs and Node environments. They make writing extension code significantly faster and less error-prone!
 
 ## 3. Contribution Guidelines
 
@@ -89,9 +110,9 @@ We welcome contributions! Whether you are styling the Lexicon UI or optimizing S
 
 ### Contributor Rules
 
-* **Manifest V3 Compliance:** Do not introduce Manifest V2 code (e.g., standard background pages). All background scripts must operate as Service Workers.
-* **Scraping Caution:** If working on the "Recheck definition" feature, ensure any Google search scraping logic respects CORS policies and is executed correctly within the extension's permission scope.
-* **Documentation:** Comment complex logic blocks, especially message passing between content scripts and the popup.
+- **Manifest V3 Compliance:** Do not introduce Manifest V2 code (e.g., standard background pages). All background scripts must operate as Service Workers.
+- **Scraping Caution:** If working on the "Recheck definition" feature, ensure any Google search scraping logic respects CORS policies and is executed correctly within the extension's permission scope.
+- **Documentation:** Comment complex logic blocks, especially message passing between content scripts and the popup.
 
 ### Branch Naming Convention
 
@@ -99,6 +120,6 @@ All branches must follow this exact pattern: `dev/[name]`
 
 **Valid Examples:**
 
-* `dev/feature-google-scraper`
-* `dev/fix-audio-playback`
-* `dev/update-manifest-permissions`
+- `dev/feature-google-scraper`
+- `dev/fix-audio-playback`
+- `dev/update-manifest-permissions`
