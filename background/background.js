@@ -1,3 +1,9 @@
+import {
+  fetchWordMetaData,
+  saveWord,
+  getCachedWordMetaData,
+} from "../core/WordHandler.js";
+
 // Register the context menu item used to save selected text.
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -11,10 +17,8 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === "saveWord" && info.selectionText) {
     try {
-      await chrome.storage.local.set({ selectedWord: info.selectionText });
-      await chrome.action.setPopup({ popup: "popup/save_conf/confirm.html" });
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      await chrome.action.openPopup();
+      await fetchWordMetaData(info.selectionText);
+      await openConfirmationPopup();
     } catch (error) {
       console.error(
         `Error occured while setting up the confirmation menu: ${error}`,
@@ -23,72 +27,53 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   }
 });
 
-// Persist a new word in extension storage.
-async function saveWordToList(word) {
-  const result = await chrome.storage.local.get({ savedWords: [] });
-  if (result.savedWords.includes(word)) return;
-  const updatedWords = [...result.savedWords, word.trim()];
-
-  await chrome.storage.local.set({ savedWords: updatedWords });
-
-  console.log(`Word saved: ${word}`);
-}
-
-// Read the active tab so keyboard shortcuts can inspect the current page.
-async function getCurrentTab() {
-  const [tab] = await chrome.tabs.query({
-    active: true,
-    lastFocusedWindow: true,
-  });
-  return tab;
-}
 // Save the current text selection when the configured keyboard command runs.
-
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === "save-to-vocab-bucket") {
-    const currentTab = await getCurrentTab();
+    const currentTab = await fetchActiveTab(); 
 
     chrome.scripting.executeScript(
       {
         target: { tabId: currentTab.id },
         func: () => window.getSelection().toString(),
       },
-      async (selection) => {
-        const word = selection[0].result.trim();
-        if (word) {
-          try {
-            await chrome.storage.local.set({
-              selectedWord: word,
-            });
-            await chrome.action.setPopup({
-              popup: "popup/save_conf/confirm.html",
-            });
-            await new Promise((resolve) => setTimeout(resolve, 100));
-            await chrome.action.openPopup();
-          } catch (error) {
-            console.error(
-              `Error occured while setting up the confirmation menu: ${error}`,
-            );
-          }
-        }
-      },
+      handleWordSaveCommand,
     );
   }
 });
 
-// Wait until a tab finishes loading before scraping the result page.
+chrome.omnibox.onInputEntered.addListener(async (searchedTerm) => {
+  console.log("Acquiring tab id...");
+  const currentTab = await fetchActiveTab();
+  const searchUrl = `https://www.google.com/search?q=${searchedTerm}`;
 
-const waitForTabLoad = (tabId) => {
-  return new Promise((resolve) => {
-    const listener = (updatedTabId, changeInfo) => {
-      if (updatedTabId === tabId && changeInfo.status === "complete") {
-        chrome.tabs.onUpdated.removeListener(listener);
-        resolve();
-      }
-    };
-    chrome.tabs.onUpdated.addListener(listener);
-  });
-};
+  console.log("Searching for the word:", searchedTerm);
+  await chrome.tabs.update({ url: searchUrl });
+  console.log("Waiting for web results..");
+  await waitForTabLoad(currentTab.id);
+  console.log("Checking for auto corrected word...");
+
+  try {
+    // If Google corrected the word, store the suggested word instead.
+    const autoCorrectedWords = await chrome.scripting.executeScript({
+      target: { tabId: currentTab.id },
+      func: grabAutoCorrectedWord,
+    });
+
+    const autoCorrectedWord = autoCorrectedWords[0].result;
+
+    if (autoCorrectedWord) {
+      console.log(`corrected word ${autoCorrectedWords[0].result}`);
+      await fetchWordMetaData(autoCorrectedWord);
+      saveWord(await getCachedWordMetaData());
+    } else {
+      await fetchWordMetaData(searchedTerm);
+      await openConfirmationPopup();
+    }
+  } catch (err) {
+    console.error(`Failer while trying to scrap auto corrections ${err}`);
+  }
+});
 
 // Extract Google’s autocorrect suggestion from the search results page.
 const grabAutoCorrectedWord = () => {
@@ -106,35 +91,47 @@ const grabAutoCorrectedWord = () => {
     : flase;
 };
 
-chrome.omnibox.onInputEntered.addListener(async (text) => {
-  console.log("Acquiring tab id...");
-  const currentTab = await getCurrentTab();
-  const searchUrl = `https://www.google.com/search?q=${text}`;
-
-  console.log("Searching for the word:", text);
-  await chrome.tabs.update({ url: searchUrl });
-  console.log("Waiting for web results..");
-  await waitForTabLoad(currentTab.id);
-  console.log("Checking for auto corrected word...");
-
-  try {
-    // If Google corrected the query, store the suggested word instead.
-    const autoCorrectedWords = await chrome.scripting.executeScript({
-      target: { tabId: currentTab.id },
-      func: grabAutoCorrectedWord,
-    });
-
-    const autoCorrectedWord = autoCorrectedWords[0].result;
-
-    if (autoCorrectedWord) {
-      console.log(`corrected word ${autoCorrectedWords[0].result}`);
-      saveWordToList(autoCorrectedWord);
-    } else {
-      if (text.toLowerCase().startsWith("define")) {
-        saveWordToList(text.toLowerCase().replace("define", "").trim());
-      }
+const handleWordSaveCommand = async (selection) => {
+  const word = selection[0].result.trim();
+  if (word) {
+    try {
+      fetchWordMetaData(word);
+      openConfirmationPopup();
+    } catch (error) {
+      console.error(
+        `Error occured while setting up the confirmation menu: ${error}`,
+      );
     }
-  } catch (err) {
-    console.error(`Failer while trying to scrap auto corrections ${err}`);
   }
-});
+};
+
+// Wait until a tab finishes loading before scraping the result page.
+const waitForTabLoad = (tabId) => {
+  return new Promise((resolve) => {
+    const listener = (updatedTabId, changeInfo) => {
+      if (updatedTabId === tabId && changeInfo.status === "complete") {
+        chrome.tabs.onUpdated.removeListener(listener);
+        resolve();
+      }
+    };
+    chrome.tabs.onUpdated.addListener(listener);
+  });
+};
+
+// Read the active tab so keyboard shortcuts can inspect the current page.
+async function fetchActiveTab() {
+  const params = {
+    active: true,
+    lastFocusedWindow: true,
+  };
+  const [tab] = await chrome.tabs.query(params);
+  return tab;
+}
+
+async function openConfirmationPopup() {
+  await chrome.action.setPopup({
+    popup: "popup/save_conf/confirm.html",
+  });
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  await chrome.action.openPopup();
+}
