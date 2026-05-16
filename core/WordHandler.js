@@ -38,7 +38,7 @@ async function cacheMetaData(metadata) {
 export async function saveWord(metadata) {
   const result = await chrome.storage.local.get({ savedWords: [] });
   const savedWords = result.savedWords;
-  if (checkForDuplicates(savedWords)) return;
+  if (checkForDuplicates(savedWords, metadata.spelling)) return;
   const updatedWords = [...result.savedWords, metadata];
   await chrome.storage.local.set({ savedWords: updatedWords });
   console.log(`Word saved: ${metadata.spelling}`);

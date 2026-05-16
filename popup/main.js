@@ -35,7 +35,7 @@ const displaySavedWords = async () => {
 
     const pronunciation = document.createElement("span");
     pronunciation.className = "meta-chip pronunciation";
-    pronunciation.textContent = `/${word.pronounciation || word.pronunciation || "N/A"}/`;
+    pronunciation.textContent = `${word.pronounciation || word.pronunciation || "N/A"}`;
 
     const category = document.createElement("span");
     category.className = "meta-chip category";
