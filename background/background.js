@@ -1,8 +1,4 @@
-import {
-  fetchWordMetaData,
-  saveWord,
-  getCachedWordMetaData,
-} from "../core/WordHandler.js";
+import { fetchWordMetaData } from "../core/WordHandler.js";
 
 // Register the context menu item used to save selected text.
 chrome.runtime.onInstalled.addListener(() => {
@@ -16,18 +12,7 @@ chrome.runtime.onInstalled.addListener(() => {
 // Open the confirmation popup after the user saves text from the context menu.
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === "saveWord" && info.selectionText) {
-    try {
-      if ((await fetchWordMetaData(info.selectionText)) == false) return;
-      const isExactWordUnavailable =
-        await chrome.storage.local.get("wordUnavailable");
-      if (!isExactWordUnavailable) {
-        await openConfirmationPopup();
-      }
-    } catch (error) {
-      console.error(
-        `Error occured while setting up the confirmation menu: ${error}`,
-      );
-    }
+    await fetchWordMetaData(info.selectionText);
   }
 });
 

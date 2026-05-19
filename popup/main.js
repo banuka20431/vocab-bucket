@@ -19,20 +19,38 @@ document.addEventListener("click", (event) => {
 
 csvBtn.addEventListener("click", async () => {
   const res = await chrome.storage.local.get("savedWords");
+  const words = res.savedWords;
   let content =
     "spelling,pronunciation,category,short-definition,long-definition,usage,audioURL,timestamp\n";
 
-  (res.savedWords ?? []).forEach((word) => {
+  words.forEach((word) => {
     content += `${word.spelling},${word.pronunciation},${word.category},${word.definition.short},${word.definition.long},${word.usage},${word.audioURL},${word.timestamp}\n`;
   });
 
   const blob = new Blob([content], { type: "text/csv;charset=utf-8" });
-  const downloadUrl  = URL.createObjectURL(blob);
+  const downloadUrl = URL.createObjectURL(blob);
 
   await chrome.downloads.download({
     saveAs: false,
-    url: downloadUrl ,
+    url: downloadUrl,
     filename: "vocab-bucket-words-export.csv",
+    conflictAction: "prompt",
+  });
+  URL.revokeObjectURL(downloadUrl);
+});
+
+jsonBtn.addEventListener("click", async () => {
+  const res = await chrome.storage.local.get("savedWords");
+  const words = res.savedWords;
+  const content = JSON.stringify(words);
+
+  const blob = new Blob([content], { type: "application/json;charset=utf-8" });
+  const downloadUrl = URL.createObjectURL(blob);
+
+  await chrome.downloads.download({
+    saveAs: false,
+    url: downloadUrl,
+    filename: "vocab-bucket-words-export.json",
     conflictAction: "prompt",
   });
   URL.revokeObjectURL(downloadUrl);
