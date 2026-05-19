@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Popup</title>
-    <link rel="stylesheet" href="styles/shared.css">
-    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="styles/shared.css" />
+    <link rel="stylesheet" href="main.css" />
   </head>
   <body>
     <div class="app">
@@ -13,7 +13,21 @@
         <p class="eyebrow">Your Browser Lexicon</p>
         <h1 class="title">Vocab Bucket</h1>
         <p class="subtitle">Saved words from your reading sessions.</p>
-        <p class="word-count" id="word-count">0 words saved</p>
+        <div id="inf-container">
+          <p class="word-count" id="word-count">0 words saved</p>
+          <button id="export-btn" class="control info">Export</button>
+          <ul id="file-types" class="hide">
+            <li>
+              <button id="csv" class="control warning">CSV</button>
+            </li>
+            <li>
+              <button id="json" class="control warning">JSON</button>
+            </li>
+            <li>
+              <button id="markdown" class="control warning">Markdown</button>
+            </li>
+          </ul>
+        </div>
       </header>
       <ul class="words-list" aria-live="polite"></ul>
     </div>

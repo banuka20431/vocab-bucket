@@ -8,27 +8,17 @@ import { config } from "../config.js";
 import { VocabularyExtractor } from "./VocabularyExtractor.js";
 
 export const fetchWordMetaData = async (word) => {
-  const result = await chrome.storage.local.get({ savedWords: [] });
-  const savedWords = result.savedWords;
+  const savedWords = await getSavedWords();
 
   if (checkForDuplicates(savedWords, word)) {
-    console.log("Word already saved. Aborting API call...");
-
-    await chrome.action.setPopup({
-      popup: "../popup/flash/already_saved/struct.html",
-    });
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    await chrome.action.openPopup();
-
-    await chrome.action.setPopup({
-      popup: "../popup/main.html",
-    });
-
+    await openPopupWordAlreadySaved();
     return false;
   }
 
   console.log(`fetching the metadata of the word ${word}.`);
-  await fetch(`${config.API_URL}"/${word}?key=${config.API_KEY}`)
+  console.log(`URL: ${config.API_URL}/${word}?key=${config.API_KEY}`);
+
+  await fetch(`${config.API_URL}/${word}?key=${config.API_KEY}`)
     .then((response) => {
       if (!response.ok) {
         throw new Error("Network response was not ok");
@@ -54,30 +44,69 @@ export const fetchWordMetaData = async (word) => {
       // check for incorrect word fetches
       if (!isExactWord(wordMetaData.spelling, word)) {
         console.log("Exact word unavailable...");
-
-        await chrome.action.setPopup({
-          popup: "../popup/flash/word_unavailable/struct.html",
-        });
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        await chrome.action.openPopup();
-
-        await chrome.action.setPopup({
-          popup: "../popup/main.html",
-        });
-
+        await cacheMetaData(wordMetaData);
+        await openPopupExactWordNonExist();
         await chrome.storage.local.set({ wordUnavaiable: true });
-
-        cacheMetaData(wordMetaData);
+        return;
       }
 
-      cacheMetaData(wordMetaData);
+      await cacheMetaData(wordMetaData);
+      await openPopupConfirmWordSave();
     })
     .catch((error) => console.error("Fetch error:", error));
 };
 
-async function cacheMetaData(metadata) {
+async function openPopupWordAlreadySaved() {
+  console.log("Word already saved. Aborting API call...");
+
+  await chrome.action.setPopup({
+    popup: "../popup/flash/already_saved/struct.html",
+  });
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  await chrome.action.openPopup();
+
+  await chrome.action.setPopup({
+    popup: "../popup/main.html",
+  });
+}
+
+async function openPopupExactWordNonExist() {
+  await chrome.action.setPopup({
+    popup: "../popup/flash/word_unavailable/struct.html",
+  });
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  await chrome.action.openPopup();
+
+  await chrome.action.setPopup({
+    popup: "../popup/main.html",
+  });
+}
+
+async function openPopupConfirmWordSave() {
+  await chrome.action.setPopup({
+    popup: "../popup/save_conf/struct.html",
+  });
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  await chrome.action.openPopup();
+
+  await chrome.action.setPopup({
+    popup: "../popup/main.html",
+  });
+}
+
+export async function getSavedWords() {
+  const result = await chrome.storage.local.get({ savedWords: [] });
+  return result.savedWords ?? [];
+}
+
+export async function cacheMetaData(metadata) {
+  await clearCachedMetadata();
   console.log(`Caching metadata: ${metadata.spelling}}.`);
   await chrome.storage.local.set({ selectedWord: metadata });
+}
+
+export async function clearCachedMetadata() {
+  await chrome.storage.local.remove("selectedWord");
 }
 
 export async function saveWord(metadata) {
@@ -89,7 +118,7 @@ export async function saveWord(metadata) {
   console.log(`Word saved: ${metadata.spelling}`);
 }
 
-const checkForDuplicates = (wordMetadataList, word) => {
+export const checkForDuplicates = (wordMetadataList, word) => {
   console.log(`checking for duplicates of the word: ${word.toLowerCase()}`);
   let duclicatesFound = false;
 
@@ -103,13 +132,13 @@ const checkForDuplicates = (wordMetadataList, word) => {
   return duclicatesFound;
 };
 
-const isExactWord = (fetchedWord, requiredWord) => {
+export const isExactWord = (fetchedWord, requiredWord) => {
   return fetchedWord.toLowerCase() === requiredWord.toLowerCase();
 };
 
 export async function getCachedWordMetaData() {
   const res = await chrome.storage.local.get("selectedWord");
-  console.log("retrived metadata", res);
+  console.log("retrived cached metadata", res);
   if (res) {
     return res.selectedWord;
   }

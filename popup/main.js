@@ -1,8 +1,48 @@
+const fileTypesList = document.querySelector("#file-types");
+const csvBtn = document.querySelector("#csv");
+const jsonBtn = document.querySelector("#json");
+const mdBtn = document.querySelector("#markdown");
+
+document.querySelector("#export-btn").addEventListener("click", (event) => {
+  fileTypesList.classList.toggle("show");
+  event.stopPropagation();
+});
+
+document.addEventListener("click", (event) => {
+  if (
+    !fileTypesList.contains(event.target) &&
+    !document.querySelector("#export-btn").contains(event.target)
+  ) {
+    fileTypesList.classList.remove("show");
+  }
+});
+
+csvBtn.addEventListener("click", async () => {
+  const res = await chrome.storage.local.get("savedWords");
+  let content =
+    "spelling,pronunciation,category,short-definition,long-definition,usage,audioURL,timestamp\n";
+
+  (res.savedWords ?? []).forEach((word) => {
+    content += `${word.spelling},${word.pronunciation},${word.category},${word.definition.short},${word.definition.long},${word.usage},${word.audioURL},${word.timestamp}\n`;
+  });
+
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8" });
+  const downloadUrl  = URL.createObjectURL(blob);
+
+  await chrome.downloads.download({
+    saveAs: false,
+    url: downloadUrl ,
+    filename: "vocab-bucket-words-export.csv",
+    conflictAction: "prompt",
+  });
+  URL.revokeObjectURL(downloadUrl);
+});
+
 const displaySavedWords = async () => {
   const wordList = document.querySelector(".words-list");
   const wordCount = document.getElementById("word-count");
   const data = await chrome.storage.local.get({ savedWords: [] });
-  let  words = data.savedWords;
+  let words = data.savedWords;
   words = words.reverse();
 
   if (!Array.isArray(words) || words.length === 0) {
@@ -36,8 +76,8 @@ const displaySavedWords = async () => {
 
     const pronunciation = document.createElement("span");
     pronunciation.className = "meta-chip pronunciation";
-    let p = "N/A"
-    if(word?.pronunciation) p = `/${word.pronunciation}/`;
+    let p = "N/A";
+    if (word?.pronunciation) p = `/${word.pronunciation}/`;
     pronunciation.textContent = p;
 
     const category = document.createElement("span");
@@ -49,7 +89,10 @@ const displaySavedWords = async () => {
 
     const definition = document.createElement("p");
     definition.className = "definition";
-    definition.textContent = word.definition?.full || word.definition?.short || "No definition available.";
+    definition.textContent =
+      word.definition?.full ||
+      word.definition?.short ||
+      "No definition available.";
 
     const exampleBox = document.createElement("div");
     exampleBox.className = "example-box";
@@ -100,7 +143,9 @@ const displaySavedWords = async () => {
       const result = await chrome.storage.local.get({ savedWords: [] });
       if (result.savedWords.length == 0) return;
 
-      const nextSavedWords = result.savedWords.filter((savedWord) => savedWord.spelling !== spelling);
+      const nextSavedWords = result.savedWords.filter(
+        (savedWord) => savedWord.spelling !== spelling,
+      );
       if (nextSavedWords.length === result.savedWords.length) return;
 
       await chrome.storage.local.set({ savedWords: nextSavedWords });
