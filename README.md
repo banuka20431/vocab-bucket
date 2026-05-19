@@ -10,6 +10,11 @@
 
 This extension is tailored for ESL (English as a Second Language) students, avid readers, and lifelong learners who want a distraction-free way to look up and store new vocabulary without leaving their current tab.
 
+### Interfaces
+<img src="tutorial/context_menu.png" alt="Context menu when saving a word by right clicking" width="400">
+<img src="tutorial/confirmation_popup.png" alt="Confirmation popup after the word selection" width="400">
+<img src="tutorial/main_popup.png" alt="Main popup including just saved word" width="400">
+
 ### Tech Used
 
 | Technology | Purpose in Project |
