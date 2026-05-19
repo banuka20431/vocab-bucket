@@ -17,8 +17,12 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === "saveWord" && info.selectionText) {
     try {
-      if(await fetchWordMetaData(info.selectionText) == false) return;
-      await openConfirmationPopup();
+      if ((await fetchWordMetaData(info.selectionText)) == false) return;
+      const isExactWordUnavailable =
+        await chrome.storage.local.get("wordUnavailable");
+      if (!isExactWordUnavailable) {
+        await openConfirmationPopup();
+      }
     } catch (error) {
       console.error(
         `Error occured while setting up the confirmation menu: ${error}`,
@@ -30,7 +34,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 // Save the current text selection when the configured keyboard command runs.
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === "save-to-vocab-bucket") {
-    const currentTab = await fetchActiveTab(); 
+    const currentTab = await fetchActiveTab();
 
     chrome.scripting.executeScript(
       {
@@ -64,10 +68,10 @@ chrome.omnibox.onInputEntered.addListener(async (searchedTerm) => {
 
     if (autoCorrectedWord) {
       console.log(`corrected word ${autoCorrectedWords[0].result}`);
-      if(await fetchWordMetaData(autoCorrectedWord) == false) return;
+      if ((await fetchWordMetaData(autoCorrectedWord)) == false) return;
       openConfirmationPopup();
     } else {
-      if(await fetchWordMetaData(searchedTerm) == false) return;
+      if ((await fetchWordMetaData(searchedTerm)) == false) return;
       await openConfirmationPopup();
     }
   } catch (err) {
@@ -79,8 +83,8 @@ chrome.omnibox.onInputEntered.addListener(async (searchedTerm) => {
 const grabAutoCorrectedWord = () => {
   let autoCorrectedWordContainer = document.querySelector("#fprs");
 
-  if(autoCorrectedWordContainer === null) {
-    autoCorrectedWordContainer = document.querySelector(".QRYxYe.NNMgCf")
+  if (autoCorrectedWordContainer === null) {
+    autoCorrectedWordContainer = document.querySelector(".QRYxYe.NNMgCf");
   }
 
   if (!autoCorrectedWordContainer) {
@@ -99,7 +103,7 @@ const handleWordSaveCommand = async (selection) => {
   const word = selection[0].result.trim();
   if (word) {
     try {
-      if(await fetchWordMetaData(word) == false) return;
+      if ((await fetchWordMetaData(word)) == false) return;
       await openConfirmationPopup();
     } catch (error) {
       console.error(
@@ -134,7 +138,7 @@ async function fetchActiveTab() {
 
 async function openConfirmationPopup() {
   await chrome.action.setPopup({
-    popup: "popup/save_conf/confirm.html",
+    popup: "popup/save_conf/struct.html",
   });
   await new Promise((resolve) => setTimeout(resolve, 100));
   await chrome.action.openPopup();

@@ -15,7 +15,7 @@ export const fetchWordMetaData = async (word) => {
     console.log("Word already saved. Aborting API call...");
 
     await chrome.action.setPopup({
-      popup: "../popup/flash/already_saved/already_saved.html",
+      popup: "../popup/flash/already_saved/struct.html",
     });
     await new Promise((resolve) => setTimeout(resolve, 100));
     await chrome.action.openPopup();
@@ -38,13 +38,39 @@ export const fetchWordMetaData = async (word) => {
     .then(async (data) => {
       if (data?.length == 0) {
         return false;
-      } else {
-        console.log(`Response json`, data);
-        const extractor = new VocabularyExtractor(data[0]);
-        const wordMetaData = extractor.getMetaData();
-        console.log(`extracted metadata:\n`, wordMetaData);
+      }
+
+      console.log(`Response json`, data);
+      const extractor = new VocabularyExtractor(data[0]);
+      const wordMetaData = extractor.getMetaData();
+      console.log(`extracted metadata:\n`, wordMetaData);
+
+      console.log(
+        word,
+        wordMetaData.spelling,
+        isExactWord(wordMetaData.spelling, word),
+      );
+
+      // check for incorrect word fetches
+      if (!isExactWord(wordMetaData.spelling, word)) {
+        console.log("Exact word unavailable...");
+
+        await chrome.action.setPopup({
+          popup: "../popup/flash/word_unavailable/struct.html",
+        });
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        await chrome.action.openPopup();
+
+        await chrome.action.setPopup({
+          popup: "../popup/main.html",
+        });
+
+        await chrome.storage.local.set({ wordUnavaiable: true });
+
         cacheMetaData(wordMetaData);
       }
+
+      cacheMetaData(wordMetaData);
     })
     .catch((error) => console.error("Fetch error:", error));
 };
@@ -66,14 +92,19 @@ export async function saveWord(metadata) {
 const checkForDuplicates = (wordMetadataList, word) => {
   console.log(`checking for duplicates of the word: ${word.toLowerCase()}`);
   let duclicatesFound = false;
+
   wordMetadataList.forEach((wordMetaData) => {
     console.log(
       `${wordMetaData.spelling.toLowerCase()}: ${wordMetaData.spelling.toLowerCase() === word.toLowerCase() ? "Yes" : "No"}`,
     );
-    duclicatesFound =
-      wordMetaData.spelling.toLowerCase() === word.toLowerCase();
+    duclicatesFound = wordMetaData.spelling.toLowerCase() == word.toLowerCase();
   });
+
   return duclicatesFound;
+};
+
+const isExactWord = (fetchedWord, requiredWord) => {
+  return fetchedWord.toLowerCase() === requiredWord.toLowerCase();
 };
 
 export async function getCachedWordMetaData() {

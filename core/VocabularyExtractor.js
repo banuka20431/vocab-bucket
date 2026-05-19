@@ -59,7 +59,7 @@ export class VocabularyExtractor {
   getMetaData() {
     return {
       spelling: this.entry.meta.id.replace(/[^a-zA-Z ]/g, ""),
-      pronounciation: this.getPronunciation(),
+      pronunciation: this.getPronunciation(),
       category: this.getCategory(),
       definition: {
         full: this.getFullDef(),

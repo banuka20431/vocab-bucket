@@ -1,0 +1,110 @@
+/* Base layout (variables, body, app padding) moved to styles/shared.css */
+.title {
+    margin: 4px 0 6px;
+    font-family: "Georgia", "Times New Roman", serif;
+    font-size: 18px;
+    line-height: 1.2;
+}
+
+.word-item {
+    display: grid;
+    gap: 12px;
+    animation: rise-in 220ms ease-out both;
+}
+
+.word {
+    display: block;
+    font-family: "Georgia", "Times New Roman", serif;
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.definition {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.flash-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.flash-actions .control {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.control {
+    appearance: none;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+    margin-right: 8px;
+    padding: 8px 12px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.control:focus-visible {
+    outline: 2px solid var(--accent-600);
+    outline-offset: 2px;
+}
+
+.control.info {
+    color: var(--accent-600);
+    background: linear-gradient(180deg, #eefbff 0%, #d7f1fb 100%);
+    border-color: rgba(47, 143, 176, 0.22);
+    box-shadow: 0 6px 14px rgba(47, 143, 176, 0.14);
+}
+
+.control.info:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(180deg, #e4f7fc 0%, #ccebf7 100%);
+}
+
+.control.info:active {
+    transform: translateY(0);
+}
+
+#save-btn {
+    color: #ffffff;
+    background: linear-gradient(180deg, var(--accent), var(--accent-600));
+    border-color: rgba(44, 139, 104, 0.28);
+    box-shadow: 0 9px 22px rgba(47, 143, 176, 0.14);
+}
+
+#save-btn:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(180deg, var(--accent), var(--accent-600));
+    filter: brightness(1.04);
+}
+
+#save-btn:active {
+    transform: translateY(0);
+    filter: brightness(0.98);
+    box-shadow: 0 6px 14px rgba(47, 143, 176, 0.18);
+}
+
+@keyframes rise-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

@@ -2,7 +2,8 @@ const displaySavedWords = async () => {
   const wordList = document.querySelector(".words-list");
   const wordCount = document.getElementById("word-count");
   const data = await chrome.storage.local.get({ savedWords: [] });
-  const words = data.savedWords;
+  let  words = data.savedWords;
+  words = words.reverse();
 
   if (!Array.isArray(words) || words.length === 0) {
     setupInitialDisplay(wordList, wordCount);
@@ -35,7 +36,9 @@ const displaySavedWords = async () => {
 
     const pronunciation = document.createElement("span");
     pronunciation.className = "meta-chip pronunciation";
-    pronunciation.textContent = `${word.pronounciation || word.pronunciation || "N/A"}`;
+    let p = "N/A"
+    if(word?.pronunciation) p = `/${word.pronunciation}/`;
+    pronunciation.textContent = p;
 
     const category = document.createElement("span");
     category.className = "meta-chip category";
@@ -114,7 +117,7 @@ const displaySavedWords = async () => {
     });
 
     const recheckDefBtn = document.createElement("button");
-    recheckDefBtn.textContent = "Recheck definition";
+    recheckDefBtn.textContent = "Recheck def";
     recheckDefBtn.classList.add("control", "info");
 
     actions.appendChild(playBtn);
