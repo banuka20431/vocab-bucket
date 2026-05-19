@@ -56,6 +56,7 @@ jsonBtn.addEventListener("click", async () => {
   URL.revokeObjectURL(downloadUrl);
 });
 
+
 const displaySavedWords = async () => {
   const wordList = document.querySelector(".words-list");
   const wordCount = document.getElementById("word-count");

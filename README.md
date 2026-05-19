@@ -11,9 +11,13 @@
 This extension is tailored for ESL (English as a Second Language) students, avid readers, and lifelong learners who want a distraction-free way to look up and store new vocabulary without leaving their current tab.
 
 ### Interfaces
-<img src="tutorial/context_menu.png" alt="Context menu when saving a word by right clicking" width="400">
-<img src="tutorial/confirmation_popup.png" alt="Confirmation popup after the word selection" width="400">
-<img src="tutorial/main_popup.png" alt="Main popup including just saved word" width="400">
+<img src="tutorial/context-menu.png" alt="Context menu when saving a word by right clicking" width="400">
+<img src="tutorial/confirmation-popup.png" alt="Confirmation popup after the word selection" width="400">
+<img src="tutorial/main-popup.png" alt="Main popup including just saved word" width="400">
+<img src="tutorial/export-feature.png" alt="Main popup after export feature added" width="400">
+<img src="tutorial/already-saved-alert.png" alt="Alert for already saved words" width="400">
+<img src="tutorial/exact-word-unavailable-aleart.png" alt="Alert for exact word unavailability" width="400">
+
 
 ### Tech Used
 
@@ -74,30 +78,40 @@ Vocab Bucket is built with a modular, scalable ES6 architecture. Here is a break
 ```text
 VOCAB-BUCKET/
 ├── background/
-│   └── background.js        # Service Worker: manages lifecycle, Omnibox, and shortcuts.
+│   └── background.js
 ├── core/
-│   ├── VocabularyExtractor.js # Class/Functions for parsing API data and scraping logic.
-│   └── WordHandler.js       # Manages word normalization, spell-checking, and routing.
+│   ├── VocabularyExtractor.js
+│   └── WordHandler.js
 ├── images/
-│   └── icons/               # Extension icons (16.png, 32.png, 48.png, 128.png).
-├── node_modules/            # Developer dependencies (managed by npm).
+│   └── icons/
 ├── popup/
-│   ├── save_conf/           # UI for the "Recheck, Discard, Save" dialog.
-│   │   ├── confirm.css
-│   │   ├── confirm.html
-│   │   └── confirm.js
-│   ├── main.css             # Stylesheet for the browser lexicon dashboard.
-│   ├── main.html            # The main UI for viewing all saved words.
-│   └── main.js              # UI logic for the lexicon (rendering, audio, deletion).
+│   ├── main.css
+│   ├── main.html
+│   ├── main.js
+│   └── flash/
+│       ├── already_saved/
+│       │   ├── script.js
+│       │   ├── struct.html
+│       │   └── style.css
+│       └── word_unavailable/
+│           ├── script.js
+│           ├── struct.html
+│           └── style.css
+├── save_conf/
+│   ├── script.js
+│   ├── struct.html
+│   └── style.css
+├── styles/
+│   └── shared.css
 ├── scripts/
-│   └── content.js           # Content script injected into active web pages.
-├── .gitignore               # Ensures sensitive files and node_modules stay local.
-├── config.example.js        # Safe template for API credentials.
-├── config.js                # Your active API credentials (ignored by Git).
-├── LICENSE                  # Open-source license terms.
-├── manifest.json            # The V3 blueprint, permissions, and routing map.
-├── package.json             # Node dependencies and scripts.
-└── README.md                # Project landing page.
+│   └── content.js
+├── tutorial/
+├── config.example.js
+├── config.js
+├── LICENSE
+├── manifest.json
+├── package.json
+└── README.md
 
 ```
 
