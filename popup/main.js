@@ -56,6 +56,60 @@ jsonBtn.addEventListener("click", async () => {
   URL.revokeObjectURL(downloadUrl);
 });
 
+mdBtn.addEventListener("click", async () => {
+  const res = await chrome.storage.local.get("savedWords");
+  const words = res.savedWords;
+
+  
+})
+mdBtn.addEventListener("click", async () => {
+  const res = await chrome.storage.local.get("savedWords");
+  const words = Array.isArray(res.savedWords) ? res.savedWords : [];
+
+  if (words.length === 0) {
+    const empty = "# Vocab Bucket — Export\n\n_No words to export._\n";
+    const blob = new Blob([empty], { type: "text/markdown;charset=utf-8" });
+    const downloadUrl = URL.createObjectURL(blob);
+    await chrome.downloads.download({
+      saveAs: false,
+      url: downloadUrl,
+      filename: "vocab-bucket-words-export.md",
+      conflictAction: "prompt",
+    });
+    URL.revokeObjectURL(downloadUrl);
+    return;
+  }
+
+  let content = "# Vocab Bucket Export\n\n";
+
+  words.forEach((word, i) => {
+    content += `## ${i + 1}. ${word.spelling || "(unknown)"}\n\n`;
+    if (word.pronunciation) content += `- **Pronunciation:** /${word.pronunciation}/\n`;
+    content += `- **Category:** ${word.category || "N/A"}\n`;
+    content += `- **Short definition:** ${word.definition?.short || "N/A"}\n`;
+    if (word.definition?.long) content += `- **Long definition:** ${word.definition.long}\n`;
+    const usage = Array.isArray(word.usage) ? word.usage.join(" \n  - ") : word.usage || "N/A";
+    if (usage && usage !== "N/A") {
+      content += `- **Usage:**\n  - ${usage.replace(/\n/g, "\n  - ")}\n`;
+    } else {
+      content += `- **Usage:** N/A\n`;
+    }
+    if (word.audioURL) content += `- **Audio:** [play](${word.audioURL})\n`;
+    if (word.timestamp) content += `- **Saved:** ${new Date(word.timestamp).toLocaleString()}\n`;
+    content += `\n---\n\n`;
+  });
+
+  const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+  const downloadUrl = URL.createObjectURL(blob);
+
+  await chrome.downloads.download({
+    saveAs: false,
+    url: downloadUrl,
+    filename: "vocab-bucket-words-export.md",
+    conflictAction: "prompt",
+  });
+  URL.revokeObjectURL(downloadUrl);
+});
 
 const displaySavedWords = async () => {
   const wordList = document.querySelector(".words-list");
