@@ -23,7 +23,7 @@ discardBtn.addEventListener("click", async () => {
 saveBtn.addEventListener("click", async () => {
   const word = wordElement.textContent.trim();
   if (word.length == 0) return;
-  saveWord(await getCachedWordMetaData(word));
+  await saveWord(await getCachedWordMetaData());
   window.close();
   await chrome.storage.local.remove("selectedWord");
   await chrome.action.setPopup({ popup: "popup/main.html" });

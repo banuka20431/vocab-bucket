@@ -1,4 +1,5 @@
-import { fetchWordMetaData } from "../core/WordHandler.js";
+import { loadWordInfo } from "../core/WordHandler.js";
+import { openPopupConfirmWordSave } from "../core/PopupHandler.js";
 
 // Register the context menu item used to save selected text.
 chrome.runtime.onInstalled.addListener(() => {
@@ -9,14 +10,14 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-// Open the confirmation popup after the user saves text from the context menu.
+// Handle word save through context menu option
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === "saveWord" && info.selectionText) {
-    await fetchWordMetaData(info.selectionText);
+    await loadWordInfo(info.selectionText);
   }
 });
 
-// Save the current text selection when the configured keyboard command runs.
+// Handle key binding shortcut for word saving
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === "save-to-vocab-bucket") {
     const currentTab = await fetchActiveTab();
@@ -32,6 +33,8 @@ chrome.commands.onCommand.addListener(async (command) => {
 });
 
 chrome.omnibox.onInputEntered.addListener(async (searchedTerm) => {
+  searchedTerm = searchedTerm.trim().toLowerCase();
+
   console.log("Acquiring tab id...");
   const currentTab = await fetchActiveTab();
   const searchUrl = `https://www.google.com/search?q=${searchedTerm}`;
@@ -43,22 +46,27 @@ chrome.omnibox.onInputEntered.addListener(async (searchedTerm) => {
   console.log("Checking for auto corrected word...");
 
   try {
-    // If Google corrected the word, store the suggested word instead.
-    const autoCorrectedWords = await chrome.scripting.executeScript({
-      target: { tabId: currentTab.id },
-      func: grabAutoCorrectedWord,
-    });
+    let autoCorrectedWord = undefined;
+    // bypass google 'recursion' easter egg
+    if (searchedTerm != "recursion") {
+      // If Google corrected the word, store the suggested word instead.
+      const autoCorrectedWords = await chrome.scripting.executeScript({
+        target: { tabId: currentTab.id },
+        func: grabAutoCorrectedWord,
+      });
 
-    const autoCorrectedWord = autoCorrectedWords[0].result;
+      autoCorrectedWord = autoCorrectedWords[0].result;
 
-    if (autoCorrectedWord) {
-      console.log(`corrected word ${autoCorrectedWords[0].result}`);
-      if ((await fetchWordMetaData(autoCorrectedWord)) == false) return;
-      openConfirmationPopup();
-    } else {
-      if ((await fetchWordMetaData(searchedTerm)) == false) return;
-      await openConfirmationPopup();
+      if (autoCorrectedWord)
+        console.log(`corrected word ${autoCorrectedWords[0].result}`);
     }
+
+    if (
+      await loadWordInfo(autoCorrectedWord ? autoCorrectedWord : searchedTerm)
+    )
+      return;
+
+    await openPopupConfirmWordSave();
   } catch (err) {
     console.error(`Failer while trying to scrap auto corrections ${err}`);
   }
@@ -66,15 +74,20 @@ chrome.omnibox.onInputEntered.addListener(async (searchedTerm) => {
 
 // Extract Google’s autocorrect suggestion from the search results page.
 const grabAutoCorrectedWord = () => {
+  /*
+   handles 'These are results for [auto_corrected_word]' scenario 
+   where Google is more confident about the spelling correction
+  */
   let autoCorrectedWordContainer = document.querySelector("#fprs");
 
   if (autoCorrectedWordContainer === null) {
+    /*
+   handles 'Did you mean [auto_corrected_word]' scenario where Google is more confident about the spelling correction
+  */
     autoCorrectedWordContainer = document.querySelector(".QRYxYe.NNMgCf");
   }
 
-  if (!autoCorrectedWordContainer) {
-    return null;
-  }
+  if (!autoCorrectedWordContainer) return null;
 
   const autoCorrectedWordElement =
     autoCorrectedWordContainer.querySelector(":scope > a > b > i");
@@ -88,8 +101,8 @@ const handleWordSaveCommand = async (selection) => {
   const word = selection[0].result.trim();
   if (word) {
     try {
-      if ((await fetchWordMetaData(word)) == false) return;
-      await openConfirmationPopup();
+      if ((await loadWordInfo(word)) == false) return;
+      await openPopupConfirmWordSave();
     } catch (error) {
       console.error(
         `Error occured while setting up the confirmation menu: ${error}`,
@@ -121,10 +134,16 @@ async function fetchActiveTab() {
   return tab;
 }
 
-async function openConfirmationPopup() {
-  await chrome.action.setPopup({
-    popup: "popup/save_conf/struct.html",
-  });
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  await chrome.action.openPopup();
-}
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
+    const tallyUninstallUrl = "https://tally.so/r/NpRANb";
+    
+    chrome.runtime.setUninstallURL(tallyUninstallUrl, () => {
+      if (chrome.runtime.lastError) {
+        console.error("Error setting uninstall URL:", chrome.runtime.lastError);
+      } else {
+        console.log("Uninstall URL successfully set.");
+      }
+    });
+  }
+});

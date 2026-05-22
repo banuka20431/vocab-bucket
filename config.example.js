@@ -1,5 +1,3 @@
 export const config = {
-    API_KEY: "your-merriam-webster-learners-api-key",
-    API_URL: "https://www.dictionaryapi.com/api/v3/references/learners/json/",
-    API_AUDIO_BASE_URL: "https://media.merriam-webster.com/audio/prons/en/us/mp3/"
+    API_KEY: "backend-api-key",
 }
