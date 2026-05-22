@@ -3,8 +3,14 @@
   "name": "Vocab-Bucket",
   "version": "1.0",
   "description": "Lets users save highlighted words on a web page and automatically fetch their meanings",
-  "permissions": ["scripting", "activeTab", "webNavigation", "contextMenus", "storage", "downloads"],
-  "omnibox": { "keyword" : "vb" },
+  "permissions": [
+    "scripting",
+    "activeTab",
+    "contextMenus",
+    "storage",
+    "downloads"
+  ],
+  "omnibox": { "keyword": "vb" },
   "background": {
     "service_worker": "background/background.js",
     "type": "module"
@@ -17,13 +23,7 @@
       "description": "Save selected word"
     }
   },
-  "host_permissions": ["<all_urls>"],
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"], 
-      "js": ["scripts/content.js"]
-    }
-  ],
+  "host_permissions": ["*://www.google.com/search*"],
   "action": {
     "default_icon": {
       "16": "/images/icons/16.png",
