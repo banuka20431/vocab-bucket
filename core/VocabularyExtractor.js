@@ -1,7 +1,10 @@
+import '../config.js';
+import { config } from '../config.js';
+
 export class VocabularyExtractor {
   constructor(entry) {
     this.entry = entry;
-    this.audioBase = "https://media.merriam-webster.com/audio/prons/en/us/mp3/";
+    this.audioBase = config.API_AUDIO_BASE_URL;
   }
 
   // Helper to strip MW tags like {bc}, {it}, etc.
