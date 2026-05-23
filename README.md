@@ -45,9 +45,9 @@ This extension is tailored for ESL (English as a Second Language) students, avid
 * [x] Core extension architecture (Manifest V3) and popup UI.
 * [x] Merriam-Webster API integration for rich word data and audio.
 * [x] Keyboard shortcut listener (`Alt + Ctrl + S`).
-* [X] Support exporting saved words into multiple different formats such as `.json`, `.csv`, `.md`.
+* [X] Support exporting saved words into multiple formats such as `.json`, `.csv`, and `.md`.
+* [x] Implement a Node.js/Express backend proxy to completely hide the API key from the browser environment.
 * [ ] **Implement "Recheck definition":** Build a fallback scraper to search Google for "define [word]" if the primary API fails or yields unsatisfactory results.
-* [ ] Implement a Node.js/Express backend proxy to completely hide the API key from the browser environment.
 * [ ] Add a JavaScript-driven Flashcard or Quiz mode to test saved vocabulary.
 * [ ] **Shortcut Conflict Handling:** Add a settings menu allowing users to remap the `Alt + Ctrl + S` shortcut in case it conflicts with native OS or other app shortcuts.
 * [ ] **Cloud Sync:** Transition from `chrome.storage.local` to `chrome.storage.sync` so users can access their Vocab Bucket across different devices logged into Chrome.
@@ -56,7 +56,7 @@ This extension is tailored for ESL (English as a Second Language) students, avid
 
 ## 2. Advanced Search Features
 
-Vocab Bucket goes beyond simple page scraping and popup clicks, offering advanced, frictionless ways to capture vocabulary directly from your browser.
+Vocab Bucket goes beyond simple page scraping and pop-up clicks, offering advanced, frictionless ways to capture vocabulary directly from your browser.
 
 ### Omnibox (Address Bar) Integration
 
