@@ -80,7 +80,7 @@ VOCAB-BUCKET/
 ├── background/
 │   └── background.js
 ├── core/
-│   ├── VocabularyExtractor.js
+│   ├── PopupHandler.js
 │   └── WordHandler.js
 ├── images/
 │   └── icons/
@@ -103,14 +103,15 @@ VOCAB-BUCKET/
 │   └── style.css
 ├── styles/
 │   └── shared.css
-├── scripts/
-│   └── content.js
+├── releases/
 ├── tutorial/
+│   └── resized-images/
 ├── config.example.js
 ├── config.js
 ├── LICENSE
 ├── manifest.json
 ├── package.json
+├── PRIVACY.md
 └── README.md
 
 ```

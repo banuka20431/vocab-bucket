@@ -17,6 +17,7 @@ export const loadWordInfo = async (requestedWord) => {
     // 1. Check whether requested word already in user's bucket
     if (await existsInSavedWords(requestedWord)) {
       await openPopupWordAlreadySaved();
+      await clearCachedMetadata();
       return false;
     }
 
