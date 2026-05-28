@@ -15,20 +15,184 @@
     --shadow: rgba(20, 58, 80, 0.2);
 }
 
-* { box-sizing: border-box; }
+* {
+    box-sizing: border-box;
+}
 
-html, body { margin: 0; width: 360px; min-height: 120px; }
+html,
+body {
+    margin: 0;
+    width: 360px;
+    min-height: 120px;
+}
 
 body {
     font-family: "Trebuchet MS", "Segoe UI", "Noto Sans", sans-serif;
     color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
     background:
         radial-gradient(circle at 10% 10%, #ffffff99 0%, transparent 40%),
         radial-gradient(circle at 90% 25%, #98d7eb99 0%, transparent 45%),
         linear-gradient(160deg, var(--sky) 0%, var(--ocean) 100%);
 }
 
-.app { padding: 18px 16px 14px; }
+.app {
+    padding: 18px 16px 14px;
+    animation: rise-in 220ms ease-out both;
+}
+
+.hero {
+    margin-bottom: 14px;
+    padding: 14px;
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    background: var(--card);
+    box-shadow: 0 10px 20px var(--shadow);
+    backdrop-filter: blur(4px);
+}
+
+.eyebrow {
+    margin: 0;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.title {
+    margin: 4px 0 6px;
+    font-family: "Georgia", "Times New Roman", serif;
+    font-size: 28px;
+    line-height: 1.1;
+}
+
+.subtitle {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 13px;
+}
+
+.word-item {
+    display: grid;
+    gap: 12px;
+    animation: rise-in 220ms ease-out both;
+}
+
+.definition {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.actions button {
+    appearance: none;
+    border: 0;
+    border-radius: 14px;
+    padding: 10px 8px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    color: var(--ink);
+    background: var(--foam);
+    box-shadow: 0 7px 16px var(--shadow);
+    transition:
+        transform 160ms ease,
+        box-shadow 160ms ease,
+        filter 160ms ease,
+        background-color 160ms ease,
+        border-color 160ms ease;
+}
+
+.actions button:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.02);
+}
+
+.actions button:active {
+    transform: translateY(0);
+    box-shadow: 0 5px 12px var(--shadow);
+}
+
+.actions button:focus-visible,
+.control:focus-visible {
+    outline: 2px solid var(--accent-600);
+    outline-offset: 2px;
+}
+
+.control {
+    appearance: none;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+    margin-right: 8px;
+    padding: 8px 12px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+        transform 180ms ease,
+        box-shadow 180ms ease,
+        background-color 180ms ease,
+        border-color 180ms ease,
+        color 180ms ease,
+        filter 180ms ease;
+}
+
+.control:hover {
+    transform: translateY(-1px);
+}
+
+.control:active {
+    transform: translateY(0);
+}
+
+.control.info {
+    color: var(--accent-600);
+    background: linear-gradient(180deg, #eefbff 0%, #d7f1fb 100%);
+    border-color: rgba(47, 143, 176, 0.22);
+    box-shadow: 0 6px 14px rgba(47, 143, 176, 0.14);
+}
+
+.control.info:hover {
+    background: linear-gradient(180deg, #e4f7fc 0%, #ccebf7 100%);
+}
+
+.control.warning {
+    color: var(--danger);
+    background: linear-gradient(180deg, #fff1f1 0%, #f5d7d7 100%);
+    border-color: rgba(181, 72, 72, 0.24);
+    box-shadow: 0 6px 14px rgba(181, 72, 72, 0.14);
+}
+
+.control.warning:hover {
+    background: linear-gradient(180deg, #ffe7e7 0%, #f2cbcb 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app,
+    .word-item,
+    .actions button,
+    .control {
+        animation: none;
+        transition: none;
+    }
+}
 
 @keyframes rise-in {
     from { opacity: 0; transform: translateY(8px); }

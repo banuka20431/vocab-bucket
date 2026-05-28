@@ -8,6 +8,23 @@
     background: var(--card);
     box-shadow: 0 10px 20px var(--shadow);
     backdrop-filter: blur(4px);
+    overflow: hidden;
+    position: relative;
+}
+
+.hero::before {
+    content: "";
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.28), transparent 36%);
+}
+
+.hero > * {
+    position: relative;
+    z-index: 1;
 }
 
 .eyebrow {
@@ -50,6 +67,9 @@ ul#file-types {
     padding: 8px;
     min-width: 120px;
     border-radius: 12px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.88);
+    box-shadow: 0 12px 24px rgba(20, 58, 80, 0.18);
     transform-origin: top right;
     opacity: 0;
     transform: translateY(-6px) scale(0.98);
@@ -126,6 +146,22 @@ ul#file-types > li > button:hover {
 .word-list-item {
     display: grid;
     gap: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.word-list-item::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 40%);
+}
+
+.word-list-item > * {
+    position: relative;
+    z-index: 1;
 }
 
 .word-header {
@@ -301,6 +337,18 @@ ul#file-types > li > button:hover {
 
 .control.warning:active {
     transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero,
+    .word-list-item,
+    .empty-state,
+    .control,
+    ul#file-types,
+    ul#file-types > li > button {
+        transition: none;
+        animation: none;
+    }
 }
 
 .control.info {
