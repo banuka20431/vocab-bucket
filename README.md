@@ -46,10 +46,11 @@ This extension is tailored for ESL (English as a Second Language) students, avid
 * [x] Merriam-Webster API integration for rich word data and audio.
 * [x] Keyboard shortcut listener (`Alt + Ctrl + S`).
 * [X] Support exporting saved words into multiple formats such as `.json`, `.csv`, and `.md`.
-* [x] Implement a Node.js/Express backend proxy to completely hide the API key from the browser environment.
-* [ ] **Implement "Recheck definition":** Build a fallback scraper to search Google for "define [word]" if the primary API fails or yields unsatisfactory results.
-* [ ] Add a JavaScript-driven Flashcard or Quiz mode to test saved vocabulary.
-* [ ] **Shortcut Conflict Handling:** Add a settings menu allowing users to remap the `Alt + Ctrl + S` shortcut in case it conflicts with native OS or other app shortcuts.
+* [x] Implement a Node.js/Express backend proxy to hide the API key from the browser environment completely.
+* [ ] Implement "Recheck definition": ~~Build a fallback scraper to search Google for "define [word]"~~ integrate a fallback API if the primary API fails or yields unsatisfactory results.
+* [ ] Implement a mechanism ~~JavaScript-driven Flashcard or Quiz mode to test saved vocabulary.~~ automatic reminders of randomly picked words from the user's saved words.
+* [ ] Shortcut Conflict Handling: Add a settings menu allowing users to remap the `Alt + Ctrl + S` shortcut in case it conflicts with native OS or other app shortcuts.
+* [ ] Create a control panel to give the user control over some aspects of how the extension works
 * [ ] **Cloud Sync:** Transition from `chrome.storage.local` to `chrome.storage.sync` so users can access their Vocab Bucket across different devices logged into Chrome.
 
 ---
@@ -62,7 +63,7 @@ Vocab Bucket goes beyond simple page scraping and pop-up clicks, offering advanc
 
 You don't even need to click the extension icon to search for a word! Vocab Bucket natively integrates with Chrome's address bar (the Omnibox).
 
-* **How to use it:** Simply click into your Chrome address bar, type the letters `vb`, and hit the `Tab` or `Space` key. Your address bar will transform into a Vocab Bucket search input. Type any word and press `Enter` to instantly look it up and add it to your Lexicon.
+* **How to use it:** Simply click into your Chrome address bar, type the letters `vb`, and hit the `Tab` or `Space` key. Your address bar will transform into a Vocab Bucket search input. Type any word and press `Enter` to look it up and add it to your Lexicon instantly.
 * **The Breakdown:** *Under the hood, this utilizes the Manifest V3 `chrome.omnibox` API. When you type the keyword (`vb`), Chrome intercepts the input and wakes up our `background.js` Service Worker. The Service Worker listens for the `chrome.omnibox.onInputEntered` event, grabs the string you typed, fetches the definition, and handles the save logic seamlessly.*
 
 ### Smart Auto-Correction Fetching
@@ -115,10 +116,6 @@ VOCAB-BUCKET/
 └── README.md
 
 ```
-
-#### The Breakdown: Why the `core/` folder?
-
-*In JavaScript architecture, separation of concerns is vital. By placing files like `VocabularyExtractor.js` and `WordHandler.js` in a dedicated `core/` folder, we decouple our business logic (fetching, parsing, validating) from our UI logic (`popup/`) and our event listeners (`background/`). This means if the Merriam-Webster API changes its JSON structure tomorrow, you only have to update the `VocabularyExtractor.js` file, leaving the rest of the extension completely intact!*
 
 ---
 
