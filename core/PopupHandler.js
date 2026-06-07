@@ -1,38 +1,46 @@
-
 export async function openPopupWordAlreadySaved() {
   console.log("Word already saved. Aborting API call...");
 
-  await chrome.action.setPopup({
-    popup: "../popup/flash/already_saved/struct.html",
-  });
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  await chrome.action.openPopup();
-
-  await chrome.action.setPopup({
-    popup: "../popup/main.html",
-  });
+  openPopup("../popup/flash/already_saved/struct.html");
 }
 
 export async function openPopupExactWordNonExist() {
-  await chrome.action.setPopup({
-    popup: "../popup/flash/word_unavailable/struct.html",
-  });
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  await chrome.action.openPopup();
-
-  await chrome.action.setPopup({
-    popup: "../popup/main.html",
-  });
+  openPopup("../popup/flash/word_unavailable/struct.html", );
 }
 
 export async function openPopupConfirmWordSave() {
-  await chrome.action.setPopup({
-    popup: "../popup/save_conf/struct.html",
-  });
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  openPopup("../popup/save_conf/struct.html");
+}
+
+export async function openFetchFailedPopup() {
+  openPopup("../popup/flash/fetch_failed/struct.html");
+}
+
+export async function openLoadingPopup() {
+  let wasLoading = false;
+  openPopup("../popup/flash/loading/struct.html", wasLoading);
+}
+
+async function openPopup(
+  uri,
+   wasLoading = true,
+  loadingDelay = 150,
+  after = "../popup/main.html"
+) {
+  if (wasLoading) {
+    try {
+      await chrome.runtime.sendMessage({ action: "close-loading-popup" });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    } catch (err) {
+      console.log("No active popup was open to close.");
+    }
+  }
+
+  await chrome.action.setPopup({ popup: uri });
+
+  await new Promise((resolve) => setTimeout(resolve, loadingDelay));
+
   await chrome.action.openPopup();
 
-  await chrome.action.setPopup({
-    popup: "../popup/main.html",
-  });
+  await chrome.action.setPopup({ popup: after });
 }
