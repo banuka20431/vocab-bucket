@@ -47,7 +47,7 @@ This extension is tailored for ESL (English as a Second Language) students, avid
 * [x] Keyboard shortcut listener (`Alt + Ctrl + S`).
 * [X] Support exporting saved words into multiple formats such as `.json`, `.csv`, and `.md`.
 * [x] Implement a Node.js/Express backend proxy to hide the API key from the browser environment completely.
-* [ ] Integrate ~~"Recheck definition"~~ a fallback API: ~~Build a fallback scraper to search Google for "define [word]"~~ integrate a fallback API if the primary API fails or yields unsatisfactory results.
+* [x] Integrate ~~"Recheck definition"~~ a fallback API: ~~Build a fallback scraper to search Google for "define [word]"~~ integrate a fallback API if the primary API fails or yields unsatisfactory results.
 * [ ] Implement a mechanism ~~JavaScript-driven Flashcard or Quiz mode to test saved vocabulary.~~ automatic reminders of randomly picked words from the user's saved words.
 * [ ] Shortcut Conflict Handling: Add a settings menu allowing users to remap the `Alt + Ctrl + S` shortcut in case it conflicts with native OS or other app shortcuts.
 * [ ] Create a control panel to give the user control over some aspects of how the extension works
