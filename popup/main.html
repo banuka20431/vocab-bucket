@@ -4,11 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Popup</title>
-    <link rel="stylesheet" href="styles/shared.css" />
+    <link rel="stylesheet" href="shared.css" />
     <link rel="stylesheet" href="main.css" />
   </head>
   <body>
     <div class="app">
+
       <header class="hero">
         <p class="eyebrow">Your Browser Lexicon</p>
         <h1 class="title">Vocab Bucket</h1>
@@ -16,7 +17,7 @@
         <div id="inf-container">
           <p class="word-count" id="word-count">0 words saved</p>
           <button id="export-btn" class="control info">Export</button>
-          <ul id="file-types" class="hide">
+          <ul id="file-types" >
             <li>
               <button id="csv" class="control warning">CSV</button>
             </li>
@@ -29,6 +30,7 @@
           </ul>
         </div>
       </header>
+      
       <ul class="words-list" aria-live="polite"></ul>
     </div>
     <script src="main.js"></script>

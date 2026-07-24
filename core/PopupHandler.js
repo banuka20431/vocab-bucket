@@ -1,11 +1,11 @@
 export async function openPopupWordAlreadySaved() {
   console.log("Word already saved. Aborting API call...");
 
-  openPopup("../popup/flash/already_saved/struct.html");
+  openPopup("../popup/already_saved/struct.html");
 }
 
 export async function openPopupExactWordNonExist() {
-  openPopup("../popup/flash/word_unavailable/struct.html", );
+  openPopup("../popup/word_unavailable/struct.html");
 }
 
 export async function openPopupConfirmWordSave() {
@@ -13,19 +13,19 @@ export async function openPopupConfirmWordSave() {
 }
 
 export async function openFetchFailedPopup() {
-  openPopup("../popup/flash/fetch_failed/struct.html");
+  openPopup("../popup/fetch_failed/struct.html");
 }
 
 export async function openLoadingPopup() {
   let wasLoading = false;
-  openPopup("../popup/flash/loading/struct.html", wasLoading);
+  openPopup("../popup/loading/struct.html", wasLoading);
 }
 
 async function openPopup(
   uri,
-   wasLoading = true,
+  wasLoading = true,
   loadingDelay = 150,
-  after = "../popup/main.html"
+  after = "../popup/main.html",
 ) {
   if (wasLoading) {
     try {

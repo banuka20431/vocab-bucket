@@ -8,7 +8,7 @@
     background: var(--card);
     box-shadow: 0 10px 20px var(--shadow);
     backdrop-filter: blur(4px);
-    overflow: hidden;
+    overflow: visible;
     position: relative;
 }
 
@@ -67,9 +67,7 @@ ul#file-types {
     padding: 8px;
     min-width: 120px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.88);
-    box-shadow: 0 12px 24px rgba(20, 58, 80, 0.18);
+    background: transparent;
     transform-origin: top right;
     opacity: 0;
     transform: translateY(-6px) scale(0.98);
@@ -110,7 +108,6 @@ ul#file-types > li > button:hover {
     border: 1px solid #b4deee;
     font-size: 12px;
     font-weight: 700;
-
 }
 
 .words-list {
