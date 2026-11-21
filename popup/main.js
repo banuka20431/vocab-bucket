@@ -1,268 +1,385 @@
+import {
+  SAVED_WORDS_KEY,
+  UI_STATE_KEY,
+  clearPopupState,
+  getPopupState,
+  getSavedWords,
+  removeWord,
+  saveWord,
+} from "../core/StorageHandler.js";
+
+const exportBtn = document.querySelector("#export-btn");
 const fileTypesList = document.querySelector("#file-types");
 const csvBtn = document.querySelector("#csv");
 const jsonBtn = document.querySelector("#json");
 const mdBtn = document.querySelector("#markdown");
+const workflowBanner = document.querySelector("#workflow-banner");
+const wordList = document.querySelector(".words-list");
+const wordCount = document.querySelector("#word-count");
 
-document.querySelector("#export-btn").addEventListener("click", (event) => {
+let activeAudio = null;
+
+// --- Export Menu Toggle ---
+exportBtn.addEventListener("click", (event) => {
   fileTypesList.classList.toggle("show");
   event.stopPropagation();
 });
 
 document.addEventListener("click", (event) => {
-  if (
-    !fileTypesList.contains(event.target) &&
-    !document.querySelector("#export-btn").contains(event.target)
-  ) {
+  if (!fileTypesList.contains(event.target) && !exportBtn.contains(event.target)) {
     fileTypesList.classList.remove("show");
   }
 });
 
+document.addEventListener("keydown", async (event) => {
+  if (event.key === "Escape") {
+    fileTypesList.classList.remove("show");
+  }
+});
+
+// --- Export Handlers ---
 csvBtn.addEventListener("click", async () => {
-  const res = await chrome.storage.local.get("savedWords");
-  const words = res.savedWords;
-  let content =
-    "spelling,pronunciation,category,short-definition,long-definition,usage,audioURL,timestamp\n";
+  fileTypesList.classList.remove("show");
+  const words = await getSavedWords();
 
-  words.forEach((word) => {
-    content += `${word.spelling},${word.pronunciation},${word.category},${word.definition.short},${word.definition.long},${word.usage},${word.audioURL},${word.timestamp}\n`;
+  const headers = [
+    "spelling",
+    "pronunciation",
+    "category",
+    "short-definition",
+    "full-definition",
+    "usage",
+    "audioURL",
+    "timestamp",
+  ];
+
+  const rows = words.map((word) => {
+    const fullDef = word.definition?.full || word.definition?.long || "";
+    const usage = Array.isArray(word.usage) ? word.usage.join(" | ") : word.usage || "";
+
+    return [
+      word.spelling || "",
+      word.pronunciation || "",
+      word.category || "",
+      word.definition?.short || "",
+      fullDef,
+      usage,
+      word.audioURL || "",
+      word.timestamp || "",
+    ]
+      .map(escapeCsvField)
+      .join(",");
   });
 
-  const blob = new Blob([content], { type: "text/csv;charset=utf-8" });
-  const downloadUrl = URL.createObjectURL(blob);
-
-  await chrome.downloads.download({
-    saveAs: false,
-    url: downloadUrl,
-    filename: "vocab-bucket-words-export.csv",
-    conflictAction: "prompt",
-  });
-  URL.revokeObjectURL(downloadUrl);
+  const content = [headers.join(","), ...rows].join("\r\n");
+  await downloadFile(content, "text/csv;charset=utf-8", "vocab-bucket-words-export.csv");
 });
 
 jsonBtn.addEventListener("click", async () => {
-  const res = await chrome.storage.local.get("savedWords");
-  const words = res.savedWords;
-  const content = JSON.stringify(words);
-
-  const blob = new Blob([content], { type: "application/json;charset=utf-8" });
-  const downloadUrl = URL.createObjectURL(blob);
-
-  await chrome.downloads.download({
-    saveAs: false,
-    url: downloadUrl,
-    filename: "vocab-bucket-words-export.json",
-    conflictAction: "prompt",
-  });
-  URL.revokeObjectURL(downloadUrl);
+  fileTypesList.classList.remove("show");
+  const words = await getSavedWords();
+  const content = JSON.stringify(words, null, 2);
+  await downloadFile(
+    content,
+    "application/json;charset=utf-8",
+    "vocab-bucket-words-export.json",
+  );
 });
 
 mdBtn.addEventListener("click", async () => {
-  const res = await chrome.storage.local.get("savedWords");
-  const words = res.savedWords;
-
-  
-})
-mdBtn.addEventListener("click", async () => {
-  const res = await chrome.storage.local.get("savedWords");
-  const words = Array.isArray(res.savedWords) ? res.savedWords : [];
+  fileTypesList.classList.remove("show");
+  const words = await getSavedWords();
 
   if (words.length === 0) {
     const empty = "# Vocab Bucket — Export\n\n_No words to export._\n";
-    const blob = new Blob([empty], { type: "text/markdown;charset=utf-8" });
-    const downloadUrl = URL.createObjectURL(blob);
-    await chrome.downloads.download({
-      saveAs: false,
-      url: downloadUrl,
-      filename: "vocab-bucket-words-export.md",
-      conflictAction: "prompt",
-    });
-    URL.revokeObjectURL(downloadUrl);
+    await downloadFile(
+      empty,
+      "text/markdown;charset=utf-8",
+      "vocab-bucket-words-export.md",
+    );
     return;
   }
 
-  let content = "# Vocab Bucket Export\n\n";
-
-  words.forEach((word, i) => {
-    content += `## ${i + 1}. ${word.spelling || "(unknown)"}\n\n`;
-    if (word.pronunciation) content += `- **Pronunciation:** /${word.pronunciation}/\n`;
-    content += `- **Category:** ${word.category || "N/A"}\n`;
-    content += `- **Short definition:** ${word.definition?.short || "N/A"}\n`;
-    if (word.definition?.long) content += `- **Long definition:** ${word.definition.long}\n`;
-    const usage = Array.isArray(word.usage) ? word.usage.join(" \n  - ") : word.usage || "N/A";
-    if (usage && usage !== "N/A") {
-      content += `- **Usage:**\n  - ${usage.replace(/\n/g, "\n  - ")}\n`;
-    } else {
-      content += `- **Usage:** N/A\n`;
+  const sections = words.map((word, index) => {
+    const lines = [`## ${index + 1}. ${word.spelling || "(unknown)"}\n`];
+    const formattedPron = formatPronunciation(word.pronunciation);
+    if (formattedPron !== "N/A") {
+      lines.push(`- **Pronunciation:** ${formattedPron}`);
     }
-    if (word.audioURL) content += `- **Audio:** [play](${word.audioURL})\n`;
-    if (word.timestamp) content += `- **Saved:** ${new Date(word.timestamp).toLocaleString()}\n`;
-    content += `\n---\n\n`;
+    lines.push(`- **Category:** ${word.category || "N/A"}`);
+    lines.push(`- **Short definition:** ${word.definition?.short || "N/A"}`);
+
+    const fullDef = word.definition?.full || word.definition?.long;
+    if (fullDef && fullDef !== word.definition?.short) {
+      lines.push(`- **Full definition:** ${fullDef}`);
+    }
+
+    if (Array.isArray(word.usage) && word.usage.length > 0) {
+      lines.push("- **Usage:**");
+      word.usage.forEach((example) => lines.push(`  - ${example}`));
+    } else {
+      lines.push("- **Usage:** N/A");
+    }
+
+    if (word.audioURL) {
+      lines.push(`- **Audio:** [Play pronunciation](${word.audioURL})`);
+    }
+    if (word.timestamp) {
+      lines.push(`- **Saved:** ${new Date(word.timestamp).toLocaleString()}`);
+    }
+
+    return lines.join("\n");
   });
 
-  const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
-  const downloadUrl = URL.createObjectURL(blob);
-
-  await chrome.downloads.download({
-    saveAs: false,
-    url: downloadUrl,
-    filename: "vocab-bucket-words-export.md",
-    conflictAction: "prompt",
-  });
-  URL.revokeObjectURL(downloadUrl);
+  const content = `# Vocab Bucket Export\n\n${sections.join("\n\n---\n\n")}\n`;
+  await downloadFile(
+    content,
+    "text/markdown;charset=utf-8",
+    "vocab-bucket-words-export.md",
+  );
 });
 
-const displaySavedWords = async () => {
-  const wordList = document.querySelector(".words-list");
-  const wordCount = document.getElementById("word-count");
-  const data = await chrome.storage.local.get({ savedWords: [] });
-  let words = data.savedWords;
-  words = words.reverse();
+// --- Workflow Banner Renderer (Replaces legacy flash/ & save_conf/ popups) ---
+async function renderWorkflowBanner(state) {
+  workflowBanner.textContent = "";
+  workflowBanner.className = "workflow-banner";
 
-  if (!Array.isArray(words) || words.length === 0) {
-    setupInitialDisplay(wordList, wordCount);
+  if (!state || !state.status) {
+    workflowBanner.classList.add("hidden");
     return;
   }
 
-  wordCount.textContent = `${words.length} ${words.length == 1 ? "word" : "words"} saved`;
+  // Clear notification badge once user views a non-loading state
+  if (state.status !== "loading") {
+    chrome.action.setBadgeText({ text: "" }).catch(() => {});
+  }
+
+  if (state.status === "loading") {
+    const row = document.createElement("div");
+    row.className = "workflow-loading-row";
+
+    const spinner = document.createElement("span");
+    spinner.className = "spinner";
+    spinner.setAttribute("aria-hidden", "true");
+
+    const text = document.createElement("p");
+    text.className = "workflow-message";
+    text.textContent = `Looking up "${state.requestedWord}"...`;
+
+    row.append(spinner, text);
+    workflowBanner.appendChild(row);
+    return;
+  }
+
+  if (state.status === "already_saved") {
+    workflowBanner.classList.add("is-warning");
+
+    const eyebrow = createEl("p", "eyebrow", "Already saved");
+    const title = createEl(
+      "h2",
+      "workflow-title",
+      `"${state.requestedWord}" is already in your bucket.`,
+    );
+    const actions = createEl("div", "workflow-actions");
+    const dismissBtn = createButton("Dismiss", ["control", "info"], dismissBanner);
+
+    actions.appendChild(dismissBtn);
+    workflowBanner.append(eyebrow, title, actions);
+    return;
+  }
+
+  if (state.status === "error") {
+    workflowBanner.classList.add("is-error");
+
+    const eyebrow = createEl("p", "eyebrow", "Lookup notice");
+    const title = createEl("h2", "workflow-title", state.title || "Lookup failed");
+    const message = createEl(
+      "p",
+      "workflow-message",
+      state.message || "Unable to fetch the requested word.",
+    );
+    const actions = createEl("div", "workflow-actions");
+
+    if (state.requestedWord) {
+      actions.appendChild(
+        createButton("Look up on Web", ["control", "info"], () =>
+          openWebDefinition(state.requestedWord),
+        ),
+      );
+    }
+    actions.appendChild(createButton("Dismiss", ["control", "warning"], dismissBanner));
+
+    workflowBanner.append(eyebrow, title, message, actions);
+    return;
+  }
+
+  if (state.status === "confirm" || state.status === "unavailable") {
+    const isExact = state.status === "confirm";
+    const meta = state.meta;
+    if (!meta) {
+      await dismissBanner();
+      return;
+    }
+
+    workflowBanner.classList.add(isExact ? "is-confirm" : "is-warning");
+
+    const eyebrow = createEl(
+      "p",
+      "eyebrow",
+      isExact ? "Confirm save" : `Exact match for "${state.requestedWord}" unavailable`,
+    );
+    const wordHeading = createEl("span", "workflow-word", meta.spelling);
+    const definition = createEl(
+      "p",
+      "workflow-message",
+      meta.definition?.short || meta.definition?.full || "No definition available.",
+    );
+
+    const actions = createEl("div", "workflow-actions");
+
+    const saveActionBtn = createButton("Save word", ["control", "info"], async () => {
+      saveActionBtn.disabled = true;
+      await saveWord(meta);
+      await clearPopupState();
+      await chrome.action.setBadgeText({ text: "" }).catch(() => {});
+      await renderSavedWords();
+      await renderWorkflowBanner(null);
+    });
+
+    const recheckBtn = createButton("Recheck def", ["control", "info"], () =>
+      openWebDefinition(state.requestedWord || meta.spelling),
+    );
+
+    const discardBtn = createButton("Discard", ["control", "warning"], dismissBanner);
+
+    actions.append(saveActionBtn, recheckBtn, discardBtn);
+    workflowBanner.append(eyebrow, wordHeading, definition, actions);
+  }
+}
+
+async function dismissBanner() {
+  await clearPopupState();
+  await chrome.action.setBadgeText({ text: "" }).catch(() => {});
+  await renderWorkflowBanner(null);
+}
+
+// --- Saved Lexicon Renderer ---
+async function renderSavedWords() {
+  const saved = await getSavedWords();
+  const words = [...saved].reverse();
+
+  wordList.textContent = "";
+
+  if (words.length === 0) {
+    const emptyItem = createEl("li", "empty-state", "No words saved yet.");
+    wordList.appendChild(emptyItem);
+    wordCount.textContent = "0 words saved";
+    return;
+  }
+
+  wordCount.textContent = `${words.length} ${words.length === 1 ? "word" : "words"} saved`;
 
   words.forEach((word) => {
-    const li = document.createElement("li");
-    li.className = "word-list-item";
+    const li = createEl("li", "word-list-item");
 
-    const header = document.createElement("div");
-    header.className = "word-header";
+    const header = createEl("div", "word-header");
+    const wordLabel = createEl("span", "word", word.spelling || "(unknown)");
+    const timestamp = createEl("span", "timestamp", formatSavedTimestamp(word.timestamp));
+    timestamp.title = word.timestamp ? new Date(word.timestamp).toLocaleString() : "Saved time";
+    header.append(wordLabel, timestamp);
 
-    const wordLabel = document.createElement("span");
-    wordLabel.className = "word";
-    wordLabel.textContent = `${word.spelling}`;
+    const metaRow = createEl("div", "word-meta");
+    const pronunciation = createEl(
+      "span",
+      "meta-chip pronunciation",
+      formatPronunciation(word.pronunciation),
+    );
+    const category = createEl("span", "meta-chip category", word.category || "N/A");
+    metaRow.append(pronunciation, category);
 
-    const timestamp = document.createElement("span");
-    timestamp.className = "timestamp";
-    timestamp.textContent = formatSavedTimestamp(word.timestamp);
-    timestamp.title = "Saved time";
-
-    header.appendChild(wordLabel);
-    header.appendChild(timestamp);
-
-    const metaRow = document.createElement("div");
-    metaRow.className = "word-meta";
-
-    const pronunciation = document.createElement("span");
-    pronunciation.className = "meta-chip pronunciation";
-    let p = "N/A";
-    if (word?.pronunciation) p = `/${word.pronunciation}/`;
-    pronunciation.textContent = p;
-
-    const category = document.createElement("span");
-    category.className = "meta-chip category";
-    category.textContent = word.category || "N/A";
-
-    metaRow.appendChild(pronunciation);
-    metaRow.appendChild(category);
-
-    const definition = document.createElement("p");
-    definition.className = "definition";
-    definition.textContent =
+    const definition = createEl(
+      "p",
+      "definition",
       word.definition?.full ||
-      word.definition?.short ||
-      "No definition available.";
+        word.definition?.long ||
+        word.definition?.short ||
+        "No definition available.",
+    );
 
-    const exampleBox = document.createElement("div");
-    exampleBox.className = "example-box";
+    const exampleBox = createEl("div", "example-box");
+    const exampleLabel = createEl("p", "example-label", "Usage example");
+    const exampleText = createEl("p", "example-text", getExampleUsage(word.usage));
+    exampleBox.append(exampleLabel, exampleText);
 
-    const exampleLabel = document.createElement("p");
-    exampleLabel.className = "example-label";
-    exampleLabel.textContent = "Usage example";
+    const actions = createEl("div", "word-actions");
 
-    const exampleText = document.createElement("p");
-    exampleText.className = "example-text";
-    exampleText.textContent = getExampleUsage(word.usage);
-
-    exampleBox.appendChild(exampleLabel);
-    exampleBox.appendChild(exampleText);
-
-    const actions = document.createElement("div");
-    actions.className = "word-actions";
-
-    const playBtn = document.createElement("button");
-    playBtn.type = "button";
-    playBtn.textContent = "Play audio";
-    playBtn.classList.add("control", "info", "audio-control");
+    const playBtn = createButton("Play audio", ["control", "info", "audio-control"], async () => {
+      if (!word.audioURL) return;
+      await playPronunciation(word.audioURL, playBtn);
+    });
     playBtn.disabled = !word.audioURL;
 
-    playBtn.addEventListener("click", async () => {
-      if (!word.audioURL) return;
-
-      const audio = new Audio(word.audioURL);
-      audio.preload = "none";
-
-      try {
-        await audio.play();
-      } catch (error) {
-        console.error("Unable to play audio clip:", error);
-      }
+    const removeBtn = createButton("Remove", ["control", "warning"], async () => {
+      await removeWord(word.spelling);
+      await renderSavedWords();
     });
 
-    const removeBtn = document.createElement("button");
-    removeBtn.dataset.spelling = word.spelling;
-    removeBtn.textContent = "Remove";
-    removeBtn.classList.add("control", "warning");
+    const recheckBtn = createButton("Recheck def", ["control", "info"], () =>
+      openWebDefinition(word.spelling),
+    );
 
-    removeBtn.addEventListener("click", async (event) => {
-      const target = event.currentTarget;
-      const spelling = target.dataset.spelling;
-      if (!spelling) return;
-
-      const result = await chrome.storage.local.get({ savedWords: [] });
-      if (result.savedWords.length == 0) return;
-
-      const nextSavedWords = result.savedWords.filter(
-        (savedWord) => savedWord.spelling !== spelling,
-      );
-      if (nextSavedWords.length === result.savedWords.length) return;
-
-      await chrome.storage.local.set({ savedWords: nextSavedWords });
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      console.log(`Removed word ${spelling}`);
-
-      target.closest("li")?.remove();
-
-      if (nextSavedWords.length == 0) {
-        setupInitialDisplay(wordList, wordCount);
-      } else {
-        wordCount.textContent = `${nextSavedWords.length} ${nextSavedWords.length == 1 ? "word" : "words"} saved`;
-      }
-    });
-
-    const recheckDefBtn = document.createElement("button");
-    recheckDefBtn.textContent = "Recheck def";
-    recheckDefBtn.classList.add("control", "info");
-
-    actions.appendChild(playBtn);
-    actions.appendChild(removeBtn);
-    actions.appendChild(recheckDefBtn);
-
-    li.appendChild(header);
-    li.appendChild(metaRow);
-    li.appendChild(definition);
-    li.appendChild(exampleBox);
-    li.appendChild(actions);
+    actions.append(playBtn, removeBtn, recheckBtn);
+    li.append(header, metaRow, definition, exampleBox, actions);
     wordList.appendChild(li);
   });
-};
+}
 
-function setupInitialDisplay(wordList, wordCount) {
-  wordList.textContent = "";
-  const emptyItem = document.createElement("li");
-  emptyItem.className = "empty-state";
-  emptyItem.textContent = "No words saved yet.";
-  wordList.appendChild(emptyItem);
-  wordCount.textContent = "0 words saved";
+// --- Helpers ---
+async function playPronunciation(url, button) {
+  if (activeAudio) {
+    activeAudio.pause();
+    activeAudio = null;
+  }
+
+  const audio = new Audio(url);
+  audio.preload = "none";
+  activeAudio = audio;
+
+  const originalLabel = button.textContent;
+  button.textContent = "Playing...";
+
+  const reset = () => {
+    button.textContent = originalLabel;
+    if (activeAudio === audio) activeAudio = null;
+  };
+
+  audio.addEventListener("ended", reset, { once: true });
+  audio.addEventListener("error", reset, { once: true });
+
+  try {
+    await audio.play();
+  } catch (err) {
+    console.error("Unable to play audio clip:", err);
+    reset();
+  }
+}
+
+function openWebDefinition(word) {
+  if (!word) return;
+  const url = `https://www.google.com/search?q=${encodeURIComponent(`define ${word}`)}`;
+  chrome.tabs.create({ url });
+}
+
+function formatPronunciation(value) {
+  if (typeof value !== "string") return "N/A";
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.toUpperCase() === "N/A") return "N/A";
+  if (trimmed.startsWith("/") && trimmed.endsWith("/")) return trimmed;
+  return `/${trimmed}/`;
 }
 
 function formatSavedTimestamp(value) {
   if (!value) return "Timestamp unavailable";
-
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return "Timestamp unavailable";
 
@@ -278,14 +395,86 @@ function getExampleUsage(usage) {
   if (!Array.isArray(usage) || usage.length === 0) {
     return "No usage example available.";
   }
-
   return usage[0];
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+function escapeCsvField(value) {
+  let str = String(value ?? "");
+  // Guard against spreadsheet formula injection
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`;
+  }
+  if (/[",\r\n]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+async function downloadFile(content, mimeType, filename) {
+  const blob = new Blob([content], { type: mimeType });
+  const downloadUrl = URL.createObjectURL(blob);
+
   try {
-    displaySavedWords();
-  } catch (error) {
-    console.error("Failed to render word list:", error);
+    const downloadId = await chrome.downloads.download({
+      saveAs: false,
+      url: downloadUrl,
+      filename,
+      conflictAction: "prompt",
+    });
+
+    const onChanged = (delta) => {
+      if (
+        delta.id === downloadId &&
+        delta.state &&
+        (delta.state.current === "complete" || delta.state.current === "interrupted")
+      ) {
+        chrome.downloads.onChanged.removeListener(onChanged);
+        URL.revokeObjectURL(downloadUrl);
+      }
+    };
+
+    chrome.downloads.onChanged.addListener(onChanged);
+    setTimeout(() => {
+      chrome.downloads.onChanged.removeListener(onChanged);
+      URL.revokeObjectURL(downloadUrl);
+    }, 30_000);
+  } catch (err) {
+    URL.revokeObjectURL(downloadUrl);
+    console.error("Download failed:", err);
+  }
+}
+
+function createEl(tag, className, text) {
+  const el = document.createElement(tag);
+  if (className) el.className = className;
+  if (text !== undefined) el.textContent = text;
+  return el;
+}
+
+function createButton(label, classes, onClick) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.textContent = label;
+  btn.classList.add(...classes);
+  btn.addEventListener("click", onClick);
+  return btn;
+}
+
+// --- Live Sync & Initialization ---
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === "session" && changes[UI_STATE_KEY]) {
+    renderWorkflowBanner(changes[UI_STATE_KEY].newValue || null);
+  }
+  if (areaName === "local" && changes[SAVED_WORDS_KEY]) {
+    renderSavedWords();
+  }
+});
+
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const [popupState] = await Promise.all([getPopupState(), renderSavedWords()]);
+    await renderWorkflowBanner(popupState);
+  } catch (err) {
+    console.error("Failed to initialize popup:", err);
   }
 });
