@@ -1,9 +1,12 @@
 import {
   SAVED_WORDS_KEY,
   UI_STATE_KEY,
+  UNSEEN_UPDATE_KEY,
   clearPopupState,
+  clearUnseenUpdateVersion,
   getPopupState,
   getSavedWords,
+  getUnseenUpdateVersion,
   removeWord,
   saveWord,
 } from "../core/StorageHandler.js";
@@ -26,12 +29,15 @@ exportBtn.addEventListener("click", (event) => {
 });
 
 document.addEventListener("click", (event) => {
-  if (!fileTypesList.contains(event.target) && !exportBtn.contains(event.target)) {
+  if (
+    !fileTypesList.contains(event.target) &&
+    !exportBtn.contains(event.target)
+  ) {
     fileTypesList.classList.remove("show");
   }
 });
 
-document.addEventListener("keydown", async (event) => {
+document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     fileTypesList.classList.remove("show");
   }
@@ -55,7 +61,9 @@ csvBtn.addEventListener("click", async () => {
 
   const rows = words.map((word) => {
     const fullDef = word.definition?.full || word.definition?.long || "";
-    const usage = Array.isArray(word.usage) ? word.usage.join(" | ") : word.usage || "";
+    const usage = Array.isArray(word.usage)
+      ? word.usage.join(" | ")
+      : word.usage || "";
 
     return [
       word.spelling || "",
@@ -72,7 +80,11 @@ csvBtn.addEventListener("click", async () => {
   });
 
   const content = [headers.join(","), ...rows].join("\r\n");
-  await downloadFile(content, "text/csv;charset=utf-8", "vocab-bucket-words-export.csv");
+  await downloadFile(
+    content,
+    "text/csv;charset=utf-8",
+    "vocab-bucket-words-export.csv",
+  );
 });
 
 jsonBtn.addEventListener("click", async () => {
@@ -139,17 +151,54 @@ mdBtn.addEventListener("click", async () => {
   );
 });
 
-// --- Workflow Banner Renderer (Replaces legacy flash/ & save_conf/ popups) ---
-async function renderWorkflowBanner(state) {
+// --- Unified Banner Controller (Lookup Workflow + Update Notice) ---
+async function refreshBanner(explicitState) {
+  const state =
+    explicitState !== undefined ? explicitState : await getPopupState();
+
   workflowBanner.textContent = "";
   workflowBanner.className = "workflow-banner";
 
-  if (!state || !state.status) {
-    workflowBanner.classList.add("hidden");
+  // 1. Active word-lookup workflow takes priority
+  if (state && state.status) {
+    await renderLookupBanner(state);
     return;
   }
 
-  // Clear notification badge once user views a non-loading state
+  // 2. Otherwise show one-time "What's new" banner if an update hasn't been dismissed
+  const unseenVersion = await getUnseenUpdateVersion();
+  if (unseenVersion) {
+    renderUpdateBanner(unseenVersion);
+    return;
+  }
+
+  // 3. Nothing active — hide banner
+  workflowBanner.classList.add("hidden");
+}
+
+function renderUpdateBanner(version) {
+  workflowBanner.classList.add("is-confirm");
+
+  const eyebrow = createEl("p", "eyebrow", `Updated to v${version}`);
+  const title = createEl("h2", "workflow-title", "What's new in Vocab Bucket");
+  const message = createEl(
+    "p",
+    "workflow-message",
+    "Faster lookups in a unified popup, fixed CSV and Markdown exports, and instant web definition recheck.",
+  );
+  const actions = createEl("div", "workflow-actions");
+  const gotItBtn = createButton("Got it", ["control", "info"], async () => {
+    await clearUnseenUpdateVersion();
+    await chrome.action.setBadgeText({ text: "" }).catch(() => {});
+    await refreshBanner(null);
+  });
+
+  actions.appendChild(gotItBtn);
+  workflowBanner.append(eyebrow, title, message, actions);
+}
+
+async function renderLookupBanner(state) {
+  // Clear lookup badge once user views a non-loading state
   if (state.status !== "loading") {
     chrome.action.setBadgeText({ text: "" }).catch(() => {});
   }
@@ -162,9 +211,11 @@ async function renderWorkflowBanner(state) {
     spinner.className = "spinner";
     spinner.setAttribute("aria-hidden", "true");
 
-    const text = document.createElement("p");
-    text.className = "workflow-message";
-    text.textContent = `Looking up "${state.requestedWord}"...`;
+    const text = createEl(
+      "p",
+      "workflow-message",
+      `Looking up "${state.requestedWord}"...`,
+    );
 
     row.append(spinner, text);
     workflowBanner.appendChild(row);
@@ -181,7 +232,11 @@ async function renderWorkflowBanner(state) {
       `"${state.requestedWord}" is already in your bucket.`,
     );
     const actions = createEl("div", "workflow-actions");
-    const dismissBtn = createButton("Dismiss", ["control", "info"], dismissBanner);
+    const dismissBtn = createButton(
+      "Dismiss",
+      ["control", "info"],
+      dismissBanner,
+    );
 
     actions.appendChild(dismissBtn);
     workflowBanner.append(eyebrow, title, actions);
@@ -192,7 +247,11 @@ async function renderWorkflowBanner(state) {
     workflowBanner.classList.add("is-error");
 
     const eyebrow = createEl("p", "eyebrow", "Lookup notice");
-    const title = createEl("h2", "workflow-title", state.title || "Lookup failed");
+    const title = createEl(
+      "h2",
+      "workflow-title",
+      state.title || "Lookup failed",
+    );
     const message = createEl(
       "p",
       "workflow-message",
@@ -207,7 +266,9 @@ async function renderWorkflowBanner(state) {
         ),
       );
     }
-    actions.appendChild(createButton("Dismiss", ["control", "warning"], dismissBanner));
+    actions.appendChild(
+      createButton("Dismiss", ["control", "warning"], dismissBanner),
+    );
 
     workflowBanner.append(eyebrow, title, message, actions);
     return;
@@ -226,31 +287,43 @@ async function renderWorkflowBanner(state) {
     const eyebrow = createEl(
       "p",
       "eyebrow",
-      isExact ? "Confirm save" : `Exact match for "${state.requestedWord}" unavailable`,
+      isExact
+        ? "Confirm save"
+        : `Exact match for "${state.requestedWord}" unavailable`,
     );
     const wordHeading = createEl("span", "workflow-word", meta.spelling);
     const definition = createEl(
       "p",
       "workflow-message",
-      meta.definition?.short || meta.definition?.full || "No definition available.",
+      meta.definition?.short ||
+        meta.definition?.full ||
+        "No definition available.",
     );
 
     const actions = createEl("div", "workflow-actions");
 
-    const saveActionBtn = createButton("Save word", ["control", "info"], async () => {
-      saveActionBtn.disabled = true;
-      await saveWord(meta);
-      await clearPopupState();
-      await chrome.action.setBadgeText({ text: "" }).catch(() => {});
-      await renderSavedWords();
-      await renderWorkflowBanner(null);
-    });
+    const saveActionBtn = createButton(
+      "Save word",
+      ["control", "info"],
+      async () => {
+        saveActionBtn.disabled = true;
+        await saveWord(meta);
+        await clearPopupState();
+        await chrome.action.setBadgeText({ text: "" }).catch(() => {});
+        await renderSavedWords();
+        await refreshBanner(null);
+      },
+    );
 
     const recheckBtn = createButton("Recheck def", ["control", "info"], () =>
       openWebDefinition(state.requestedWord || meta.spelling),
     );
 
-    const discardBtn = createButton("Discard", ["control", "warning"], dismissBanner);
+    const discardBtn = createButton(
+      "Discard",
+      ["control", "warning"],
+      dismissBanner,
+    );
 
     actions.append(saveActionBtn, recheckBtn, discardBtn);
     workflowBanner.append(eyebrow, wordHeading, definition, actions);
@@ -260,7 +333,7 @@ async function renderWorkflowBanner(state) {
 async function dismissBanner() {
   await clearPopupState();
   await chrome.action.setBadgeText({ text: "" }).catch(() => {});
-  await renderWorkflowBanner(null);
+  await refreshBanner(null);
 }
 
 // --- Saved Lexicon Renderer ---
@@ -284,8 +357,14 @@ async function renderSavedWords() {
 
     const header = createEl("div", "word-header");
     const wordLabel = createEl("span", "word", word.spelling || "(unknown)");
-    const timestamp = createEl("span", "timestamp", formatSavedTimestamp(word.timestamp));
-    timestamp.title = word.timestamp ? new Date(word.timestamp).toLocaleString() : "Saved time";
+    const timestamp = createEl(
+      "span",
+      "timestamp",
+      formatSavedTimestamp(word.timestamp),
+    );
+    timestamp.title = word.timestamp
+      ? new Date(word.timestamp).toLocaleString()
+      : "Saved time";
     header.append(wordLabel, timestamp);
 
     const metaRow = createEl("div", "word-meta");
@@ -294,7 +373,11 @@ async function renderSavedWords() {
       "meta-chip pronunciation",
       formatPronunciation(word.pronunciation),
     );
-    const category = createEl("span", "meta-chip category", word.category || "N/A");
+    const category = createEl(
+      "span",
+      "meta-chip category",
+      word.category || "N/A",
+    );
     metaRow.append(pronunciation, category);
 
     const definition = createEl(
@@ -308,21 +391,33 @@ async function renderSavedWords() {
 
     const exampleBox = createEl("div", "example-box");
     const exampleLabel = createEl("p", "example-label", "Usage example");
-    const exampleText = createEl("p", "example-text", getExampleUsage(word.usage));
+    const exampleText = createEl(
+      "p",
+      "example-text",
+      getExampleUsage(word.usage),
+    );
     exampleBox.append(exampleLabel, exampleText);
 
     const actions = createEl("div", "word-actions");
 
-    const playBtn = createButton("Play audio", ["control", "info", "audio-control"], async () => {
-      if (!word.audioURL) return;
-      await playPronunciation(word.audioURL, playBtn);
-    });
+    const playBtn = createButton(
+      "Play audio",
+      ["control", "info", "audio-control"],
+      async () => {
+        if (!word.audioURL) return;
+        await playPronunciation(word.audioURL, playBtn);
+      },
+    );
     playBtn.disabled = !word.audioURL;
 
-    const removeBtn = createButton("Remove", ["control", "warning"], async () => {
-      await removeWord(word.spelling);
-      await renderSavedWords();
-    });
+    const removeBtn = createButton(
+      "Remove",
+      ["control", "warning"],
+      async () => {
+        await removeWord(word.spelling);
+        await renderSavedWords();
+      },
+    );
 
     const recheckBtn = createButton("Recheck def", ["control", "info"], () =>
       openWebDefinition(word.spelling),
@@ -400,7 +495,6 @@ function getExampleUsage(usage) {
 
 function escapeCsvField(value) {
   let str = String(value ?? "");
-  // Guard against spreadsheet formula injection
   if (/^[=+\-@\t\r]/.test(str)) {
     str = `'${str}`;
   }
@@ -426,7 +520,8 @@ async function downloadFile(content, mimeType, filename) {
       if (
         delta.id === downloadId &&
         delta.state &&
-        (delta.state.current === "complete" || delta.state.current === "interrupted")
+        (delta.state.current === "complete" ||
+          delta.state.current === "interrupted")
       ) {
         chrome.downloads.onChanged.removeListener(onChanged);
         URL.revokeObjectURL(downloadUrl);
@@ -463,18 +558,26 @@ function createButton(label, classes, onClick) {
 // --- Live Sync & Initialization ---
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName === "session" && changes[UI_STATE_KEY]) {
-    renderWorkflowBanner(changes[UI_STATE_KEY].newValue || null);
+    refreshBanner(changes[UI_STATE_KEY].newValue || null);
   }
   if (areaName === "local" && changes[SAVED_WORDS_KEY]) {
     renderSavedWords();
   }
+  if (areaName === "local" && changes[UNSEEN_UPDATE_KEY]) {
+    refreshBanner();
+  }
 });
 
-document.addEventListener("DOMContentLoaded", async () => {
+async function init() {
   try {
-    const [popupState] = await Promise.all([getPopupState(), renderSavedWords()]);
-    await renderWorkflowBanner(popupState);
+    await Promise.all([renderSavedWords(), refreshBanner()]);
   } catch (err) {
     console.error("Failed to initialize popup:", err);
   }
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init, { once: true });
+} else {
+  init();
+}

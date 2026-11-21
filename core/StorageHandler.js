@@ -1,5 +1,6 @@
 export const SAVED_WORDS_KEY = "savedWords";
 export const UI_STATE_KEY = "popupState";
+export const UNSEEN_UPDATE_KEY = "unseenUpdateVersion";
 
 const STALE_LOADING_MS = 15_000;
 const STALE_STATE_MS = 5 * 60_000;
@@ -54,7 +55,11 @@ export async function existsInSavedWords(word) {
  * @returns {Promise<{ saved: boolean, reason?: string }>}
  */
 export async function saveWord(metadata) {
-  if (!metadata || typeof metadata.spelling !== "string" || !metadata.spelling.trim()) {
+  if (
+    !metadata ||
+    typeof metadata.spelling !== "string" ||
+    !metadata.spelling.trim()
+  ) {
     return { saved: false, reason: "invalid" };
   }
 
@@ -125,4 +130,30 @@ export async function getPopupState() {
  */
 export async function clearPopupState() {
   await chrome.storage.session.remove(UI_STATE_KEY);
+}
+
+/**
+ * Saves an unseen major-version string to show the "What's new" banner once.
+ * @param {string} version
+ */
+export async function setUnseenUpdateVersion(version) {
+  await chrome.storage.local.set({ [UNSEEN_UPDATE_KEY]: version });
+}
+
+/**
+ * Returns the unseen update version if the user has not dismissed it yet.
+ * @returns {Promise<string|null>}
+ */
+export async function getUnseenUpdateVersion() {
+  const result = await chrome.storage.local.get(UNSEEN_UPDATE_KEY);
+  return typeof result[UNSEEN_UPDATE_KEY] === "string"
+    ? result[UNSEEN_UPDATE_KEY]
+    : null;
+}
+
+/**
+ * Clears the unseen update flag once dismissed.
+ */
+export async function clearUnseenUpdateVersion() {
+  await chrome.storage.local.remove(UNSEEN_UPDATE_KEY);
 }

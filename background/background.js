@@ -1,11 +1,14 @@
 import { config } from "../config.js";
 import { loadWordInfo, setActionBadge } from "../core/WordHandler.js";
-import { setPopupState } from "../core/StorageHandler.js";
+import {
+  setPopupState,
+  setUnseenUpdateVersion,
+} from "../core/StorageHandler.js";
 
 const CONTEXT_MENU_ID = "saveWord";
 const TAB_LOAD_TIMEOUT_MS = 12_000;
 
-chrome.runtime.onInstalled.addListener((details) => {
+chrome.runtime.onInstalled.addListener(async (details) => {
   // Rebuild context menu idempotently to avoid duplicate-ID warnings on updates
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create(
@@ -34,6 +37,17 @@ chrome.runtime.onInstalled.addListener((details) => {
         );
       }
     });
+  }
+
+  if (details.reason === chrome.runtime.OnInstalledReason.UPDATE) {
+    const currentVersion = chrome.runtime.getManifest().version;
+    const prevMajor = Number((details.previousVersion || "0").split(".")[0]);
+    const currMajor = Number(currentVersion.split(".")[0]);
+
+    if (currMajor > prevMajor) {
+      await setUnseenUpdateVersion(currentVersion);
+      await setActionBadge("NEW", "#2f8fb0");
+    }
   }
 });
 
