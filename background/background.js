@@ -1,149 +1,190 @@
-import { loadWordInfo } from "../core/WordHandler.js";
-import { openPopupConfirmWordSave } from "../core/PopupHandler.js";
+import { config } from "../config.js";
+import { loadWordInfo, setActionBadge } from "../core/WordHandler.js";
+import { setPopupState } from "../core/StorageHandler.js";
 
-// Register the context menu item used to save selected text.
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: "saveWord",
-    title: "Save '%s' to Vocab-Bucket",
-    contexts: ["selection"],
-  });
-});
-
-// Handle word save through context menu option
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId === "saveWord" && info.selectionText) {
-    await loadWordInfo(info.selectionText);
-  }
-});
-
-// Handle key binding shortcut for word saving
-chrome.commands.onCommand.addListener(async (command) => {
-  if (command === "save-to-vocab-bucket") {
-    const currentTab = await fetchActiveTab();
-
-    chrome.scripting.executeScript(
-      {
-        target: { tabId: currentTab.id },
-        func: () => window.getSelection().toString(),
-      },
-      handleWordSaveCommand,
-    );
-  }
-});
-
-chrome.omnibox.onInputEntered.addListener(async (searchedTerm) => {
-  searchedTerm = searchedTerm.trim().toLowerCase();
-
-  console.log("Acquiring tab id...");
-  const currentTab = await fetchActiveTab();
-  const searchUrl = `https://www.google.com/search?q=${searchedTerm}`;
-
-  console.log("Searching for the word:", searchedTerm);
-  await chrome.tabs.update({ url: searchUrl });
-  console.log("Waiting for web results..");
-  await waitForTabLoad(currentTab.id);
-  console.log("Checking for auto corrected word...");
-
-  try {
-    let autoCorrectedWord = undefined;
-    // bypass google 'recursion' easter egg
-    if (searchedTerm != "recursion") {
-      // If Google corrected the word, store the suggested word instead.
-      const autoCorrectedWords = await chrome.scripting.executeScript({
-        target: { tabId: currentTab.id },
-        func: grabAutoCorrectedWord,
-      });
-
-      autoCorrectedWord = autoCorrectedWords[0].result;
-
-      if (autoCorrectedWord)
-        console.log(`corrected word ${autoCorrectedWords[0].result}`);
-    }
-
-    if (
-      await loadWordInfo(autoCorrectedWord ? autoCorrectedWord : searchedTerm)
-    )
-      return;
-
-    await openPopupConfirmWordSave();
-  } catch (err) {
-    console.error(`Failer while trying to scrap auto corrections ${err}`);
-  }
-});
-
-// Extract Google’s autocorrect suggestion from the search results page.
-const grabAutoCorrectedWord = () => {
-  /*
-   handles 'These are results for [auto_corrected_word]' scenario 
-   where Google is more confident about the spelling correction
-  */
-  let autoCorrectedWordContainer = document.querySelector("#fprs");
-
-  if (autoCorrectedWordContainer === null) {
-    /*
-   handles 'Did you mean [auto_corrected_word]' scenario where Google is more confident about the spelling correction
-  */
-    autoCorrectedWordContainer = document.querySelector(".QRYxYe.NNMgCf");
-  }
-
-  if (!autoCorrectedWordContainer) return null;
-
-  const autoCorrectedWordElement =
-    autoCorrectedWordContainer.querySelector(":scope > a > b > i");
-
-  return autoCorrectedWordElement
-    ? autoCorrectedWordElement.textContent.trim()
-    : flase;
-};
-
-const handleWordSaveCommand = async (selection) => {
-  const word = selection[0].result.trim();
-  if (word) {
-    try {
-      if ((await loadWordInfo(word)) == false) return;
-      await openPopupConfirmWordSave();
-    } catch (error) {
-      console.error(
-        `Error occured while setting up the confirmation menu: ${error}`,
-      );
-    }
-  }
-};
-
-// Wait until a tab finishes loading before scraping the result page.
-const waitForTabLoad = (tabId) => {
-  return new Promise((resolve) => {
-    const listener = (updatedTabId, changeInfo) => {
-      if (updatedTabId === tabId && changeInfo.status === "complete") {
-        chrome.tabs.onUpdated.removeListener(listener);
-        resolve();
-      }
-    };
-    chrome.tabs.onUpdated.addListener(listener);
-  });
-};
-
-// Read the active tab so keyboard shortcuts can inspect the current page.
-async function fetchActiveTab() {
-  const params = {
-    active: true,
-    lastFocusedWindow: true,
-  };
-  const [tab] = await chrome.tabs.query(params);
-  return tab;
-}
+const CONTEXT_MENU_ID = "saveWord";
+const TAB_LOAD_TIMEOUT_MS = 12_000;
 
 chrome.runtime.onInstalled.addListener((details) => {
-  if (details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
-    const tallyUninstallUrl = "https://tally.so/r/NpRANb";
-    
-    chrome.runtime.setUninstallURL(tallyUninstallUrl, () => {
+  // Rebuild context menu idempotently to avoid duplicate-ID warnings on updates
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create(
+      {
+        id: CONTEXT_MENU_ID,
+        title: "Save '%s' to Vocab-Bucket",
+        contexts: ["selection"],
+      },
+      () => {
+        if (chrome.runtime.lastError) {
+          console.error("Context menu error:", chrome.runtime.lastError.message);
+        }
+      },
+    );
+  });
+
+  if (
+    details.reason === chrome.runtime.OnInstalledReason.INSTALL &&
+    config.UNINSTALL_SURVEY_URL
+  ) {
+    chrome.runtime.setUninstallURL(config.UNINSTALL_SURVEY_URL, () => {
       if (chrome.runtime.lastError) {
-        console.error("Error setting uninstall URL:", chrome.runtime.lastError);
-      } else {
-        console.log("Uninstall URL successfully set.");
+        console.error(
+          "Error setting uninstall URL:",
+          chrome.runtime.lastError.message,
+        );
       }
     });
   }
 });
+
+// 1. Context menu trigger
+chrome.contextMenus.onClicked.addListener(async (info) => {
+  if (info.menuItemId === CONTEXT_MENU_ID && info.selectionText) {
+    await loadWordInfo(info.selectionText);
+  }
+});
+
+// 2. Keyboard shortcut trigger (Alt+Shift+S)
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command !== "save-to-vocab-bucket") return;
+
+  const currentTab = await fetchActiveTab();
+  if (!currentTab?.id || !isInjectableUrl(currentTab.url)) {
+    await setPopupState({
+      status: "error",
+      requestedWord: "",
+      title: "Page not supported",
+      message:
+        "Browser shortcuts cannot read text on internal Chrome pages. Use the Omnibox (type 'vb' + Space) instead.",
+    });
+    await setActionBadge("!", "#b54848");
+    try {
+      await chrome.action.openPopup();
+    } catch {
+      // Badge indicates the error if popup cannot open programmatically
+    }
+    return;
+  }
+
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: currentTab.id },
+      func: () => window.getSelection()?.toString() || "",
+    });
+
+    const selectedWord = results?.[0]?.result?.trim();
+    if (selectedWord) {
+      await loadWordInfo(selectedWord);
+    }
+  } catch (err) {
+    console.error("Failed to read selected text from active tab:", err);
+  }
+});
+
+// 3. Omnibox trigger ('vb <word>') with Google autocorrect detection
+chrome.omnibox.onInputEntered.addListener(async (rawInput) => {
+  const searchedTerm = rawInput.trim().toLowerCase();
+  if (!searchedTerm) return;
+
+  const currentTab = await fetchActiveTab();
+  if (!currentTab?.id) {
+    await loadWordInfo(searchedTerm);
+    return;
+  }
+
+  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchedTerm)}`;
+
+  try {
+    await chrome.tabs.update(currentTab.id, { url: searchUrl });
+    const loaded = await waitForTabLoad(currentTab.id, TAB_LOAD_TIMEOUT_MS);
+
+    let resolvedTerm = searchedTerm;
+
+    // Bypass Google's 'recursion' easter egg
+    if (loaded && searchedTerm !== "recursion") {
+      try {
+        const injectionResults = await chrome.scripting.executeScript({
+          target: { tabId: currentTab.id },
+          func: grabAutoCorrectedWord,
+        });
+
+        const autoCorrected = injectionResults?.[0]?.result;
+        if (typeof autoCorrected === "string" && autoCorrected.length > 0) {
+          resolvedTerm = autoCorrected;
+        }
+      } catch (scrapeErr) {
+        console.warn("Autocorrect check skipped:", scrapeErr.message);
+      }
+    }
+
+    await loadWordInfo(resolvedTerm);
+  } catch (err) {
+    console.error("Omnibox lookup failed:", err);
+    await loadWordInfo(searchedTerm);
+  }
+});
+
+/**
+ * Injected into Google Search results to extract spelling autocorrect suggestions.
+ * @returns {string|null}
+ */
+function grabAutoCorrectedWord() {
+  let container = document.querySelector("#fprs");
+  if (!container) {
+    container = document.querySelector(".QRYxYe.NNMgCf");
+  }
+  if (!container) return null;
+
+  const correctedEl = container.querySelector(":scope > a > b > i");
+  return correctedEl ? correctedEl.textContent.trim() : null;
+}
+
+/**
+ * Waits for a tab to finish loading with timeout and tab-close cleanup to prevent listener leaks.
+ * @param {number} tabId
+ * @param {number} timeoutMs
+ * @returns {Promise<boolean>}
+ */
+function waitForTabLoad(tabId, timeoutMs) {
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const cleanup = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      chrome.tabs.onUpdated.removeListener(onUpdated);
+      chrome.tabs.onRemoved.removeListener(onRemoved);
+      resolve(result);
+    };
+
+    const onUpdated = (updatedTabId, changeInfo) => {
+      if (updatedTabId === tabId && changeInfo.status === "complete") {
+        cleanup(true);
+      }
+    };
+
+    const onRemoved = (removedTabId) => {
+      if (removedTabId === tabId) {
+        cleanup(false);
+      }
+    };
+
+    const timer = setTimeout(() => cleanup(false), timeoutMs);
+
+    chrome.tabs.onUpdated.addListener(onUpdated);
+    chrome.tabs.onRemoved.addListener(onRemoved);
+  });
+}
+
+function isInjectableUrl(url) {
+  return typeof url === "string" && /^https?:\/\//i.test(url);
+}
+
+async function fetchActiveTab() {
+  const [tab] = await chrome.tabs.query({
+    active: true,
+    lastFocusedWindow: true,
+  });
+  return tab || null;
+}
