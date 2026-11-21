@@ -1,6 +1,18 @@
 {
+  "name": "vocab-bucket",
+  "version": "1.5.0",
+  "private": true,
+  "description": "Save highlighted words on any webpage and automatically fetch their meanings, pronunciations, and examples.",
+  "type": "module",
+  "author": "Malith Banuka Subasinghe",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/banuka20431/vocab-bucket.git"
+  },
+  "scripts": {
+    "check": "node --check background/background.js core/StorageHandler.js core/WordHandler.js popup/main.js config.js"
+  },
   "devDependencies": {
-    "@types/chrome": "^0.1.42",
-    "@types/node": "^25.7.0"
+    "@types/chrome": "^0.1.42"
   }
 }
